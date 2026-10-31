@@ -7,6 +7,7 @@ export const DIFFS = [
   { key: 'normal',   name: 'NORMAL',   per: 6,  gap: 2, ln: 0.12, chord: 0,    ref: 1 },
   { key: 'hard',     name: 'HARD',     per: 9,  gap: 1, ln: 0.14, chord: 0.10, ref: 2 },
   { key: 'nightmare', name: 'NIGHTMARE', per: 13, gap: 1, ln: 0.16, chord: 0.24, ref: 3 },
+  { key: 'overload', name: 'OVERLOAD', per: 15, gap: 1, ln: 0.18, chord: 0.38, ref: 4 },
 ];
 const SPM = 16; // 마디당 16분음표 스텝
 

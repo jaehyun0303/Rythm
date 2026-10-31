@@ -33,6 +33,7 @@ const DEFAULTS = () => ({
   settings: { speed: 5.5, offset: 0, volume: 0.8, hitsound: true, auto: false },
   bests: {},
   tuning: {},
+  v: 0,
   favorites: [],
 });
 let mem = null;
@@ -46,14 +47,18 @@ export const store = {
     this.data = Object.assign(def, d || {});
     this.data.settings = Object.assign(def.settings, (d && d.settings) || {});
     this.data.profile = Object.assign(def.profile, (d && d.profile) || {});
-    // 구버전 저장 데이터 이전: overload -> nightmare, 단계 없는 키 -> 단계 0
-    const nb = {};
-    for (const [k, v] of Object.entries(this.data.bests || {})) {
-      let key = k.replace(':overload', ':nightmare');
-      if (key.split(':').length === 2) key += ':0';
-      nb[key] = v;
+    // 구버전 저장 데이터 이전 (1회): 옛 overload -> nightmare, 단계 없는 키 -> 단계 0
+    if (!this.data.v) {
+      const nb = {};
+      for (const [k, v] of Object.entries(this.data.bests || {})) {
+        let key = k.replace(':overload', ':nightmare');
+        if (key.split(':').length === 2) key += ':0';
+        nb[key] = v;
+      }
+      this.data.bests = nb;
+      this.data.v = 2;
+      this.save();
     }
-    this.data.bests = nb;
     this.data.tuning = this.data.tuning || {};
     return this.data;
   },

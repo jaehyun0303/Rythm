@@ -133,7 +133,7 @@ export class SongSelect {
     this.layout(); this.select();
   }
   moveDiff(d) {
-    this.diff = clamp(this.diff + d, 0, 3);
+    this.diff = clamp(this.diff + d, 0, DIFFS.length - 1);
     this.renderDetail();
     this.layout();
   }
@@ -222,7 +222,7 @@ export class SongSelect {
     $('#diffs').innerHTML = '';
     DIFFS.forEach((df, i) => {
       const b = document.createElement('button');
-      b.className = 'dbtn'; b.style.left = 24 + i * 134 + 'px';
+      b.className = 'dbtn'; b.style.left = 24 + i * 108 + 'px';
       b.setAttribute('aria-pressed', String(i === this.diff));
       const sti = stageOf(s.id, df.key);
       b.innerHTML = `<span>${df.name}</span><span>${levelOf(s, i, sti)}</span>` +

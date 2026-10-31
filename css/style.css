@@ -81,7 +81,7 @@ button{font:inherit}
 .row.gone{pointer-events:none}
 
 /* 상세 패널 */
-.dbtn{position:absolute;top:308px;width:126px;height:56px;padding:0;border:1px solid rgba(0,240,255,.35);background:rgba(10,8,24,.6);color:var(--tx);cursor:pointer;text-align:center;transition:all .15s}
+.dbtn{position:absolute;top:308px;width:100px;height:56px;padding:0;border:1px solid rgba(0,240,255,.35);background:rgba(10,8,24,.6);color:var(--tx);cursor:pointer;text-align:center;transition:all .15s}
 .dbtn span:first-child{display:block;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.24em;color:var(--list);line-height:14px}
 .dbtn span:last-child{display:block;font-family:'Orbitron',sans-serif;font-weight:700;font-size:22px;line-height:28px}
 .dbtn[aria-pressed="true"]{border-color:var(--pk);background:var(--pk);color:var(--bg);box-shadow:0 0 20px rgba(255,42,109,.55)}
