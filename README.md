@@ -24,7 +24,7 @@ python3 -m http.server 8000
 
 ## 음원 넣기
 
-`songs/faded.mp3`, `songs/shape-of-you.mp3`, `songs/sugar.mp3` 를 넣어요 (자세한 건 `songs/README.md`). 없으면 데모 비트로 플레이돼요.
+`js/songs.js` 의 `audio` 경로대로 `songs/` 폴더에 mp3 를 넣어요 (파일 이름 목록은 `songs/README.md`). 없으면 데모 비트로 플레이돼요.
 
 ## 조작
 
@@ -56,7 +56,7 @@ python3 -m http.server 8000
 
 ## 난이도와 OVERLOAD 튜닝
 
-난이도는 **EASY / NORMAL / HARD / NIGHTMARE** 4단계예요. 곡마다, 난이도마다 따로 **튜닝 단계(×0~×3)** 가 있어요.
+난이도는 **EASY / NORMAL / HARD / NIGHTMARE / OVERLOAD** 5단계예요. 곡마다, 난이도마다 따로 **튜닝 단계(×0~×3)** 가 있어요.
 
 - 현재 단계에서 기준 정확도를 넘겨야 다음 단계가 해금돼요: **×0→1: 95%, ×1→2: 97%, ×2→3: 98.5%** (오토플레이와 실패한 플레이는 기록으로 인정 안 돼요)
 - 곡 선택에서 `RAISE ▲` 버튼(또는 `U` 키)으로 올려요. **한 번 올리면 되돌릴 수 없어요** — 그래서 확인 창이 떠요.

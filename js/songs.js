@@ -35,19 +35,19 @@ export const SONGS = [
   {
     id: 'idgaf', palette: ['space', 'ember', 'cyber'], title: 'IDGAF', artist: 'BoyWithUke ft. blackbear',
     audio: 'songs/idgaf.mp3', bpm: 98, duration: 139,
-    levels: [5, 8, 11, 16, 19], preview: 69, isNew: true,
+    levels: [5, 8, 11, 16, 19], preview: 69,
     cover: { variant: 1, a: '#a89dff', b: '#00f0ff' },
   },
   {
     id: 'dangerously', palette: ['space', 'sunset', 'ember'], title: 'DANGEROUSLY', artist: 'Charlie Puth',
     audio: 'songs/dangerously.mp3', bpm: 75, duration: 200,
-    levels: [4, 6, 9, 13, 15], preview: 108, isNew: true,
+    levels: [4, 6, 9, 13, 15], preview: 108,
     cover: { variant: 2, a: '#00f0ff', b: '#a89dff' },
   },
   {
     id: 'i-aint-worried', palette: ['sky', 'sunset', 'cyber'], title: "I AIN'T WORRIED", artist: 'OneRepublic',
     audio: 'songs/i-aint-worried.mp3', bpm: 140, duration: 148,
-    levels: [6, 11, 16, 22, 26], preview: 76, isNew: true,
+    levels: [6, 11, 16, 22, 26], preview: 76,
     cover: { variant: 0, a: '#ff2a6d', b: '#a89dff' },
   },
   {
@@ -55,7 +55,25 @@ export const SONGS = [
     palette: ['space', 'cyber', 'ember'],
     artist: 'Samuel Kim (Echo Ver.)',
     audio: 'songs/stay-at-your-house.mp3', bpm: 125, duration: 245,
-    levels: [6, 10, 15, 21, 24], preview: 130, isNew: true,
+    levels: [6, 10, 15, 21, 24], preview: 130,
     cover: { variant: 1, a: '#00f0ff', b: '#ff2a6d' },
+  },
+  {
+    id: 'spectre', title: 'SPECTRE', artist: 'Alan Walker', palette: ['space', 'ember', 'cyber'],
+    audio: 'songs/spectre.mp3', bpm: 128, duration: 226,
+    levels: [6, 9, 14, 20, 23], preview: 68, isNew: true,
+    cover: { variant: 2, a: '#00f0ff', b: '#ff2a6d' },
+  },
+  {
+    id: 'understand', title: 'UNDERSTAND', artist: 'BoyWithUke', palette: ['sky', 'sunset', 'cyber'],
+    audio: 'songs/understand.mp3', bpm: 103, duration: 195,
+    levels: [5, 8, 11, 15, 18], preview: 126, isNew: true,
+    cover: { variant: 0, a: '#a89dff', b: '#00f0ff' },
+  },
+  {
+    id: 'out-of-reach', title: 'OUT OF REACH', artist: 'BoyWithUke', palette: ['sunset', 'sky', 'ember'],
+    audio: 'songs/out-of-reach.mp3', bpm: 148, duration: 165,
+    levels: [6, 10, 15, 22, 25], preview: 71, isNew: true,
+    cover: { variant: 1, a: '#ff2a6d', b: '#a89dff' },
   },
 ];
