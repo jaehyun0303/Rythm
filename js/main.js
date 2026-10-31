@@ -1,5 +1,5 @@
 // 진입점: 화면 라우팅, 옵션, 키 입력 분배
-import { $, $$, store, clamp } from './util.js';
+import { $, $$, store, clamp, stageOf, levelOf } from './util.js';
 import { SONGS } from './songs.js';
 import { AudioEngine } from './audio.js';
 import { DIFFS } from './chart.js';
@@ -70,22 +70,23 @@ const app = {
   songs: SONGS, audio,
   openOptions, back() { audio.stopPreview(0.2); go('title'); },
   async startSong(song, diffIdx) {
-    last = { song, diffIdx };
     const d = DIFFS[diffIdx];
+    const stage = stageOf(song.id, d.key);
+    last = { song, diffIdx, stage };
     $('#loading').style.display = 'flex';
     const entry = await audio.load(song);
     await audio.unlock();
     $('#loading').style.display = 'none';
     audio.stopPreview(0.1);
     go('play');
-    game.start({ song, entry, diffKey: d.key, diffName: d.name, level: song.levels[diffIdx], chart: entry.charts[d.key] });
+    game.start({ song, entry, diffKey: d.key, diffName: d.name, stage, level: levelOf(song, diffIdx, stage), chart: entry.chartFor(d.key, stage) });
   },
 };
 
 const game = new Game(audio, store, {
   onFinish(r) {
     lastResult = r;
-    showResults(r, last.song.levels[last.diffIdx]);
+    showResults(r, levelOf(last.song, last.diffIdx, last.stage));
     go('results');
   },
   onQuit() { game.stop(); selectUI.show(); go('select'); },

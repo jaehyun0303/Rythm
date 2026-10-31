@@ -83,6 +83,13 @@
     <div id="dTitle" class="abs orb chroma-s" style="left:264px;top:44px;width:296px;font-weight:900;font-size:32px;line-height:36px;letter-spacing:.04em"></div>
     <div id="dArtist" class="abs" style="left:264px;top:126px;font-size:16px;letter-spacing:.12em;line-height:20px;color:var(--list)"></div>
 
+    <div id="tune" class="abs" style="left:264px;top:210px;width:296px;height:72px">
+      <div class="mono lbl" style="letter-spacing:.24em">OVERLOAD TUNING</div>
+      <div id="tunePips" style="position:absolute;left:0;top:22px;display:flex;gap:6px"></div>
+      <div id="tuneTxt" class="mono" style="position:absolute;left:0;top:38px;width:172px;font-size:11px;letter-spacing:.06em;line-height:14px;color:var(--mut)"></div>
+      <button id="btnRaise" class="btn ghost" style="left:180px;top:16px;width:116px;height:44px;font-size:12px">RAISE ▲</button>
+    </div>
+
     <div class="abs" style="left:264px;top:164px;width:92px"><div class="mono lbl" style="letter-spacing:.24em;line-height:14px">BPM</div><div id="dBpm" class="orb" style="font-weight:700;font-size:20px;line-height:28px">—</div></div>
     <div class="abs" style="left:356px;top:164px;width:92px"><div class="mono lbl" style="letter-spacing:.24em;line-height:14px">TIME</div><div id="dTime" class="orb" style="font-weight:700;font-size:20px;line-height:28px">—</div></div>
     <div class="abs" style="left:448px;top:164px;width:92px"><div class="mono lbl" style="letter-spacing:.24em;line-height:14px">NOTES</div><div id="dNotes" class="orb" style="font-weight:700;font-size:20px;line-height:28px">—</div></div>
@@ -110,6 +117,7 @@
     <div><span class="kbd">← →</span><span>DIFFICULTY</span></div>
     <div><span class="kbd">ENTER</span><span>START</span></div>
     <div><span class="kbd">F</span><span>FAVORITE</span></div>
+    <div><span class="kbd">U</span><span>RAISE</span></div>
     <div><span class="kbd">TAB</span><span>MODS</span></div>
     <div><span class="kbd">ESC</span><span>BACK</span></div>
   </div>
@@ -292,6 +300,7 @@
     <span class="chip pk" style="font-size:12px;letter-spacing:.2em;padding:3px 10px;line-height:16px">NEW RECORD</span>
     <span id="rRecDelta" class="orb" style="font-weight:700;font-size:16px;color:var(--cy)"></span>
   </div>
+  <div id="rUnlock" class="abs mono" style="left:440px;top:322px;font-size:12px;letter-spacing:.14em;color:var(--pk);display:none"></div>
   <div id="rBars"></div>
   <div class="abs" style="left:440px;top:536px;width:400px;height:1px;background:rgba(0,240,255,.2)"></div>
   <div id="rTotal" class="abs mono lbl" style="left:440px;top:548px;letter-spacing:.3em">TOTAL NOTES 0</div>
@@ -326,6 +335,18 @@
     <div id="optRows"></div>
     <div class="mono lbl" style="position:absolute;left:28px;bottom:22px;letter-spacing:.12em"><span class="kb">↑↓ SELECT · ←→ CHANGE · ENTER / ESC CLOSE</span><span class="tc">TAP ◀ ▶ TO CHANGE</span></div>
     <button id="optDone" class="btn ghost" style="right:24px;bottom:12px;width:90px;height:36px;font-size:12px">DONE</button>
+  </div>
+</div>
+
+<div id="raiseOv" class="ov" style="display:none">
+  <div class="panel" style="position:relative;width:540px;height:292px;background:rgba(10,8,24,.97);border-color:rgba(255,42,109,.5)">
+    <div class="orb" style="position:absolute;left:28px;top:22px;font-weight:700;font-size:18px;letter-spacing:.3em;color:var(--pk)">RAISE DIFFICULTY</div>
+    <div id="raiseSong" style="position:absolute;left:28px;top:62px;width:484px;font-weight:700;font-size:18px;letter-spacing:.06em"></div>
+    <div id="raiseLv" class="orb" style="position:absolute;left:28px;top:96px;font-weight:700;font-size:26px"></div>
+    <div id="raiseNotes" class="mono" style="position:absolute;left:28px;top:140px;font-size:13px;letter-spacing:.14em;color:var(--list)"></div>
+    <div class="mono" style="position:absolute;left:28px;top:174px;width:484px;font-size:12px;letter-spacing:.1em;line-height:18px;color:var(--pk)">THIS CANNOT BE UNDONE. ONCE RAISED, THIS TRACK AND DIFFICULTY CAN NEVER BE LOWERED AGAIN.</div>
+    <button id="raiseNo" class="btn ghost" style="left:28px;top:226px;width:190px;height:44px">CANCEL · ESC</button>
+    <button id="raiseYes" class="btn solid" style="left:232px;top:226px;width:280px;height:44px;font-size:14px;background:var(--pk);border-color:var(--pk);box-shadow:0 0 22px rgba(255,42,109,.6)">RAISE · ENTER</button>
   </div>
 </div>
 

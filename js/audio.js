@@ -1,5 +1,5 @@
 // 오디오 엔진: 디코드/분석 캐시, 정밀 게임 클럭, 미리듣기, 스펙트럼, 히트사운드, 데모 비트 합성
-import { generateAll } from './chart.js';
+import { generateAll, buildChart, DIFFS } from './chart.js';
 import { mulberry32 } from './util.js';
 
 const DEMO_SR = 22050;
@@ -80,7 +80,13 @@ export class AudioEngine {
     // 메인 스레드를 잠깐 양보해서 UI가 멈추지 않게
     await new Promise((r) => setTimeout(r, 0));
     const gen = generateAll(pcm, sr, song);
-    const entry = { buffer, source, duration: buffer.duration, ...gen };
+    const entry = { buffer, source, duration: buffer.duration, ...gen, stageCharts: {} };
+    entry.chartFor = (diffKey, stage = 0) => {
+      if (stage === 0) return entry.charts[diffKey];
+      const k = diffKey + ':' + stage;
+      if (!entry.stageCharts[k]) entry.stageCharts[k] = buildChart(entry.ss, DIFFS.find((d) => d.key === diffKey), song.id, stage);
+      return entry.stageCharts[k];
+    };
     this.cache.set(song.id, entry);
     this.lru.push(song.id);
     // 디코드된 버퍼는 최근 3곡만 유지 (차트는 가벼우니 유지)

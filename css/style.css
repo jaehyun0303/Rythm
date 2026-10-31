@@ -180,3 +180,14 @@ body.touch #touchBar{display:block}
 #secName{transition:color .4s}
 .row .rt{max-width:calc(100% - 64px - 84px);overflow:hidden;text-overflow:ellipsis}
 .row.sel .rt{max-width:calc(100% - 110px - 84px)}
+
+/* ---------- 난이도 단계(튜닝) ---------- */
+.dbtn .bp{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:3px;text-decoration:none}
+.dbtn .bp b{display:block;width:10px;height:3px;background:rgba(233,247,255,.25)}
+.dbtn .bp b.f{background:var(--pk);box-shadow:0 0 6px var(--pk)}
+.dbtn[aria-pressed="true"] .bp b{background:rgba(7,6,13,.3)}
+.dbtn[aria-pressed="true"] .bp b.f{background:var(--bg);box-shadow:none}
+.tp{display:block;width:34px;height:8px;border:1px solid rgba(255,42,109,.6);background:transparent}
+.tp.f{background:var(--pk);box-shadow:0 0 8px rgba(255,42,109,.8)}
+.tp.rdy{border-color:var(--cy);box-shadow:0 0 8px rgba(0,240,255,.7);animation:blink 1.2s steps(2,start) infinite}
+#btnRaise.go{border-color:var(--pk);background:var(--pk);color:var(--bg);box-shadow:0 0 18px rgba(255,42,109,.55)}

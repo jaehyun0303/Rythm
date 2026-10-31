@@ -1,5 +1,5 @@
 // 결과 화면
-import { $, clamp, fmtNum, store, levelInfo, xpForLevel, chartRating, playerRating } from './util.js';
+import { $, clamp, fmtNum, store, levelInfo, xpForLevel, chartRating, playerRating, canRaise, stageOf, RAISE_REQ, MAX_STAGE } from './util.js';
 import { coverSVG } from './cover.js';
 import { DIFFS } from './chart.js';
 import { rankColor } from './game.js';
@@ -14,7 +14,7 @@ const BARS = [
 export function showResults(r, level) {
   const d = store.data;
   const df = DIFFS.find((x) => x.key === r.diffKey);
-  const key = r.song.id + ':' + r.diffKey;
+  const key = r.song.id + ':' + r.diffKey + ':' + r.stage;
   const prev = d.bests[key];
 
   // ---- 저장: 최고 기록 / 레이팅 / XP ----
@@ -54,7 +54,13 @@ export function showResults(r, level) {
   $('#rCover').innerHTML = coverSVG(r.song, { size: 72, border: 2 });
   $('#rSong').textContent = r.song.short || r.song.title;
   $('#rArtist').textContent = r.song.artist;
-  $('#rDiff').textContent = df.name + ' ' + level;
+  $('#rDiff').textContent = df.name + ' ' + level + (r.stage ? ' ▲' + r.stage : '');
+  // 튜닝 해금 안내
+  const ul = $('#rUnlock'), stNow = stageOf(r.song.id, r.diffKey);
+  if (!r.failed && !r.auto && canRaise(r.song.id, r.diffKey)) { ul.style.display = 'block'; ul.textContent = `▲ TUNING UNLOCKED · RAISE IT FROM TRACK SELECT [U]`; }
+  else if (!r.failed && !r.auto && stNow < MAX_STAGE) { ul.style.display = 'block'; ul.style.color = 'var(--mut)'; ul.textContent = `${RAISE_REQ[stNow]}%+ ACCURACY UNLOCKS THE NEXT TUNING STAGE`; }
+  else ul.style.display = 'none';
+  if (canRaise(r.song.id, r.diffKey)) ul.style.color = 'var(--pk)';
   $('#rBpm').textContent = Math.round(r.chart.bpm) + ' BPM';
 
   // ---- 점수 (카운트업) ----

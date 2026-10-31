@@ -1,5 +1,5 @@
 // 곡 선택 화면
-import { $, $$, clamp, fmtNum, fmtTime, pad2, store, levelInfo, playerRating } from './util.js';
+import { $, $$, clamp, fmtNum, fmtTime, pad2, store, levelInfo, playerRating, stageOf, bestOf, levelOf, canRaise, raiseStage, MAX_STAGE, RAISE_REQ } from './util.js';
 import { coverSVG } from './cover.js';
 import { DIFFS } from './chart.js';
 import { rankColor } from './game.js';
@@ -75,6 +75,9 @@ export class SongSelect {
     $('#btnOpt').addEventListener('click', () => this.app.openOptions());
     $('#btnBack').addEventListener('click', () => this.app.back());
     $('#btnFav').addEventListener('click', () => this.toggleFav());
+    $('#btnRaise').addEventListener('click', () => this.askRaise());
+    $('#raiseNo').addEventListener('click', () => this.closeRaise());
+    $('#raiseYes').addEventListener('click', () => this.confirmRaise());
     // 위/아래 스와이프로 곡 이동 (탭은 그대로 클릭으로 처리)
     let sy = null;
     list.addEventListener('pointerdown', (e) => { sy = e.clientY; this.dragged = false; });
@@ -151,13 +154,14 @@ export class SongSelect {
         top: slot.top + (hidden ? Math.sign(off) * 30 : 0) + 'px', left: slot.left + 'px',
         width: slot.w + 'px', height: slot.h + 'px', opacity: hidden ? 0 : slot.o,
       });
-      r.querySelector('.rlv').textContent = 'LV ' + s.levels[this.diff];
-      const best = store.data.bests[s.id + ':' + DIFFS[this.diff].key];
+      const dk = DIFFS[this.diff].key, st = stageOf(s.id, dk), lv = levelOf(s, this.diff, st);
+      r.querySelector('.rlv').textContent = 'LV ' + lv + (st ? ' ▲' + st : '');
+      const best = bestOf(s.id, dk);
       const rk = r.querySelector('.rrank');
       rk.classList.toggle('has', !!best);
       if (best) { rk.textContent = best.rank; rk.style.background = rankColor(best.rank); rk.style.fontSize = best.rank.length > 1 ? '16px' : '22px'; }
       const chips = r.querySelectorAll('.rchips .chip');
-      chips[0].textContent = DIFFS[this.diff].name + ' ' + s.levels[this.diff];
+      chips[0].textContent = DIFFS[this.diff].name + ' ' + lv + (st ? ' ▲' + st : '');
       chips[1].textContent = Math.round(s.bpm) + ' BPM';
     });
     const n = this.view.length;
@@ -191,7 +195,8 @@ export class SongSelect {
     if (!s) return;
     const d = DIFFS[this.diff];
     const entry = this.app.audio.cache.get(s.id) || (this.app.audio.chartKeep && this.app.audio.chartKeep.get(s.id)) || null;
-    const chart = entry ? entry.charts[d.key] : null;
+    const stage = stageOf(s.id, d.key);
+    const chart = entry ? entry.chartFor(d.key, stage) : null;
     $('#dCover').innerHTML = coverSVG(s, { size: 220, border: 1 });
     $('#dNo').textContent = 'TRACK ' + pad2(this.songs.indexOf(s) + 1);
     const tl = titleLines(s.title), big = tl.length < 3;
@@ -219,7 +224,9 @@ export class SongSelect {
       const b = document.createElement('button');
       b.className = 'dbtn'; b.style.left = 24 + i * 134 + 'px';
       b.setAttribute('aria-pressed', String(i === this.diff));
-      b.innerHTML = `<span>${df.name}</span><span>${s.levels[i]}</span>`;
+      const sti = stageOf(s.id, df.key);
+      b.innerHTML = `<span>${df.name}</span><span>${levelOf(s, i, sti)}</span>` +
+        (sti ? `<u class="bp">${[0, 1, 2].map((k) => `<b class="${k < sti ? 'f' : ''}"></b>`).join('')}</u>` : '');
       b.addEventListener('click', () => { this.diff = i; this.renderDetail(); this.layout(); });
       $('#diffs').appendChild(b);
     });
@@ -235,10 +242,45 @@ export class SongSelect {
     } else svg.innerHTML = '';
 
     // 최고 기록
-    const best = store.data.bests[s.id + ':' + d.key];
+    const best = bestOf(s.id, d.key);
     $('#dBestLbl').textContent = best ? `BEST · ${best.rank} · ${best.acc.toFixed(1)}%` : 'BEST';
     $('#dBest').textContent = best ? fmtNum(best.score) : '—';
     $('#btnStart').disabled = !entry;
+    this.renderTune(s, d);
+  }
+
+  // ---- 난이도 단계(튜닝): 기준 기록을 세워야 해금, 한 번 올리면 되돌릴 수 없음 ----
+  renderTune(s, d) {
+    const st = stageOf(s.id, d.key), ok = canRaise(s.id, d.key), max = st >= MAX_STAGE;
+    $('#tunePips').innerHTML = [0, 1, 2].map((k) => `<i class="tp${k < st ? ' f' : ''}${k === st && ok ? ' rdy' : ''}"></i>`).join('');
+    const b = bestOf(s.id, d.key, st);
+    const txt = $('#tuneTxt');
+    if (max) { txt.textContent = 'MAX · PERMANENTLY LOCKED IN'; txt.style.color = 'var(--pk)'; }
+    else if (ok) { txt.textContent = 'RECORD MET · READY TO RAISE'; txt.style.color = 'var(--cy)'; }
+    else { txt.textContent = `${RAISE_REQ[st]}% ACC NEEDED` + (b ? ` · BEST ${b.acc.toFixed(1)}%` : ''); txt.style.color = 'var(--mut)'; }
+    const btn = $('#btnRaise');
+    btn.disabled = !ok;
+    btn.classList.toggle('go', ok);
+    btn.textContent = max ? 'MAX' : ok ? 'RAISE ▲' : 'LOCKED';
+  }
+  askRaise() {
+    const s = this.view[this.sel];
+    if (!s) return;
+    const d = DIFFS[this.diff];
+    if (!canRaise(s.id, d.key)) return;
+    const st = stageOf(s.id, d.key), entry = this.app.audio.cache.get(s.id);
+    $('#raiseSong').textContent = `${disp(s)} · ${d.name}`;
+    $('#raiseLv').textContent = `LV ${levelOf(s, this.diff, st)} → ${levelOf(s, this.diff, st + 1)}`;
+    const a = entry ? entry.chartFor(d.key, st).total : 0, b = entry ? entry.chartFor(d.key, st + 1).total : 0;
+    $('#raiseNotes').textContent = `NOTES ${fmtNum(a)} → ${fmtNum(b)}  (+${a ? Math.round((b / a - 1) * 100) : 0}%)`;
+    $('#raiseOv').style.display = 'flex';
+    this.raiseOpen = true;
+  }
+  closeRaise() { $('#raiseOv').style.display = 'none'; this.raiseOpen = false; }
+  confirmRaise() {
+    const s = this.view[this.sel], d = DIFFS[this.diff];
+    this.closeRaise();
+    if (s && raiseStage(s.id, d.key)) { this.layout(); this.renderDetail(); }
   }
 
   start() {
@@ -258,7 +300,13 @@ export class SongSelect {
   }
 
   onKey(e) {
+    if (this.raiseOpen) {
+      if (e.code === 'Enter' || e.code === 'NumpadEnter') this.confirmRaise();
+      else if (e.code === 'Escape') this.closeRaise();
+      return true;
+    }
     switch (e.code) {
+      case 'KeyU': this.askRaise(); return true;
       case 'ArrowUp': this.move(-1); return true;
       case 'ArrowDown': this.move(1); return true;
       case 'ArrowLeft': this.moveDiff(-1); return true;

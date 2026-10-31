@@ -5,7 +5,7 @@
 //   audio     : 음원 경로 (songs/ 폴더). 파일이 없으면 데모 비트로 대체 재생됨
 //   bpm       : 대략의 BPM — 정확한 박자 위치(offset)와 미세 BPM은 음원 분석으로 자동 보정
 //   duration  : 음원이 없을 때 쓰는 예상 길이(초)
-//   levels    : [EASY, NORMAL, HARD, OVERLOAD] 표시 레벨
+//   levels    : [EASY, NORMAL, HARD, NIGHTMARE] 표시 레벨
 //   preview   : 미리듣기 시작 지점(초)
 //   isNew     : NEW 탭에 표시
 //   cover     : { variant: 0|1|2, a: '#색', b: '#색' } (생략 가능)

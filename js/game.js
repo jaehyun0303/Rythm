@@ -143,10 +143,10 @@ export class Game {
   }
 
   // ---------- 시작 ----------
-  start({ song, entry, diffKey, diffName, level, chart }) {
+  start({ song, entry, diffKey, diffName, level, chart, stage = 0 }) {
     this.stop(true);
     const st = this.store.data.settings;
-    this.song = song; this.entry = entry; this.diffKey = diffKey; this.chart = chart;
+    this.song = song; this.entry = entry; this.diffKey = diffKey; this.chart = chart; this.stage = stage;
     this.auto = !!st.auto;
     this.pxs = st.speed * 100;
     this.userOffset = (st.offset || 0) / 1000;
@@ -169,7 +169,7 @@ export class Game {
     this.judged = 0;
     this.failed = false;
     this.rec = new Array(101).fill(0);
-    const bestKey = song.id + ':' + diffKey;
+    const bestKey = song.id + ':' + diffKey + ':' + stage;
     const best = this.store.data.bests[bestKey];
     this.ghost = best && best.ghost ? best.ghost : null;
     this.cache = {};
@@ -179,7 +179,7 @@ export class Game {
     $('#hCover').innerHTML = coverSVG(song, { size: 64, border: 2 });
     $('#hTitle').textContent = song.short || song.title;
     $('#hArtist').textContent = song.artist;
-    $('#hDiff').textContent = diffName + ' ' + level;
+    $('#hDiff').textContent = diffName + ' ' + level + (stage ? ' ▲' + stage : '');
     $('#hBpm').textContent = Math.round(chart.bpm) + ' BPM';
     $('#specNote').textContent = Math.round(chart.bpm) + ' BPM · 4/4';
     $('#tTot').textContent = fmtTime(this.duration);
@@ -501,7 +501,7 @@ export class Game {
     const acc = this.calcAcc(false);
     for (let i = this.recIdx || 0; i <= 100; i++) this.rec[i] = this.score;
     const result = {
-      song: this.song, diffKey: this.diffKey, chart: this.chart,
+      song: this.song, diffKey: this.diffKey, stage: this.stage, chart: this.chart,
       counts: { ...this.counts }, score: Math.round(this.score), acc, maxCombo: this.maxCombo,
       total: this.total, devs: this.devs, accHist: this.accHist, missIdx: this.missIdx,
       sync: Math.round(this.sync), failed, rank: rankOf(acc, failed), ghost: this.rec, auto: this.auto,

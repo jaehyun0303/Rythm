@@ -32,6 +32,7 @@ const DEFAULTS = () => ({
   profile: { name: 'PLAYER_01', xp: 0 },
   settings: { speed: 5.5, offset: 0, volume: 0.8, hitsound: true, auto: false },
   bests: {},
+  tuning: {},
   favorites: [],
 });
 let mem = null;
@@ -45,6 +46,15 @@ export const store = {
     this.data = Object.assign(def, d || {});
     this.data.settings = Object.assign(def.settings, (d && d.settings) || {});
     this.data.profile = Object.assign(def.profile, (d && d.profile) || {});
+    // 구버전 저장 데이터 이전: overload -> nightmare, 단계 없는 키 -> 단계 0
+    const nb = {};
+    for (const [k, v] of Object.entries(this.data.bests || {})) {
+      let key = k.replace(':overload', ':nightmare');
+      if (key.split(':').length === 2) key += ':0';
+      nb[key] = v;
+    }
+    this.data.bests = nb;
+    this.data.tuning = this.data.tuning || {};
     return this.data;
   },
   save() {
@@ -64,8 +74,34 @@ export function chartRating(level, acc) {
   const f = clamp((acc - 60) / 40, 0, 1);
   return level * Math.pow(f, 1.6);
 }
+// ---- 곡별 난이도 단계(튜닝): 올리기만 가능, 현재 단계에서 기준 정확도를 넘겨야 다음 단계 해금 ----
+export const MAX_STAGE = 3;
+export const RAISE_REQ = [95, 97, 98.5];         // 단계 0->1, 1->2, 2->3 에 필요한 정확도(%)
+export const STAGE_LV = 2;                        // 단계당 레벨 상승량
+export const stageOf = (id, dk) => (store.data.tuning && store.data.tuning[id + ':' + dk]) || 0;
+export const bestOf = (id, dk, st = stageOf(id, dk)) => store.data.bests[id + ':' + dk + ':' + st];
+export const levelOf = (song, diffIdx, st) => song.levels[diffIdx] + STAGE_LV * st;
+export function canRaise(id, dk) {
+  const st = stageOf(id, dk);
+  if (st >= MAX_STAGE) return false;
+  const b = bestOf(id, dk, st);
+  return !!b && b.acc >= RAISE_REQ[st];
+}
+export function raiseStage(id, dk) {
+  if (!canRaise(id, dk)) return false;
+  store.data.tuning[id + ':' + dk] = stageOf(id, dk) + 1;
+  store.save();
+  return true;
+}
+
 export function playerRating(bests) {
-  const arr = Object.values(bests).map((b) => b.rating || 0).sort((a, b) => b - a).slice(0, 10);
+  // 같은 곡/난이도는 단계 중 가장 높은 레이팅만 반영
+  const byChart = {};
+  for (const [k, b] of Object.entries(bests)) {
+    const c = k.split(':').slice(0, 2).join(':');
+    byChart[c] = Math.max(byChart[c] || 0, b.rating || 0);
+  }
+  const arr = Object.values(byChart).sort((a, b) => b - a).slice(0, 10);
   if (!arr.length) return 0;
   return arr.reduce((a, b) => a + b, 0) / Math.min(10, Math.max(arr.length, 5));
 }

@@ -6,7 +6,7 @@ export const DIFFS = [
   { key: 'easy',     name: 'EASY',     per: 3,  gap: 4, ln: 0.10, chord: 0,    ref: 0 },
   { key: 'normal',   name: 'NORMAL',   per: 6,  gap: 2, ln: 0.12, chord: 0,    ref: 1 },
   { key: 'hard',     name: 'HARD',     per: 9,  gap: 1, ln: 0.14, chord: 0.10, ref: 2 },
-  { key: 'overload', name: 'OVERLOAD', per: 13, gap: 1, ln: 0.16, chord: 0.24, ref: 3 },
+  { key: 'nightmare', name: 'NIGHTMARE', per: 13, gap: 1, ln: 0.16, chord: 0.24, ref: 3 },
 ];
 const SPM = 16; // 마디당 16분음표 스텝
 
@@ -99,7 +99,16 @@ export function stepScores(an) {
 }
 
 // ---------- 3) 난이도별 채보 ----------
-export function buildChart(ss, diff, seedKey) {
+// 단계(stage 0~3): 같은 곡/난이도를 더 촘촘하고 복잡하게. 시드는 단계와 무관해서 기본 골격은 유지됨
+const STAGE = { per: [1, 1.25, 1.5, 1.8], gapCut: [0, 0, 1, 1], chord: [0, 0.05, 0.12, 0.2], ln: [0, 0.02, 0.04, 0.06] };
+export function buildChart(ss, diff0, seedKey, stage = 0) {
+  const diff = {
+    ...diff0,
+    per: Math.min(15, Math.round(diff0.per * STAGE.per[stage])),
+    gap: diff0.gap >= 2 ? Math.max(1, diff0.gap - STAGE.gapCut[stage]) : diff0.gap,
+    chord: diff0.chord + STAGE.chord[stage],
+    ln: diff0.ln + STAGE.ln[stage],
+  };
   const rng = mulberry32(hashStr(seedKey + ':' + diff.key));
   const { score, step, N, ml, ref, offset } = ss;
   const chosen = [];
@@ -180,7 +189,7 @@ export function buildChart(ss, diff, seedKey) {
   const dens = new Array(19).fill(0);
   const total = ss.dur;
   for (const n of notes) dens[Math.min(18, Math.floor((n.t / total) * 19))]++;
-  return { diff: diff.key, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur };
+  return { diff: diff.key, stage, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur };
 }
 
 // ---------- 4) 곡 구간(섹션) 자동 검출: 마디별 에너지 -> 3단계 -> 짧은 구간 병합 ----------
@@ -237,5 +246,6 @@ export function generateAll(pcm, sr, song) {
   const ss = stepScores(an);
   const charts = {};
   for (const d of DIFFS) charts[d.key] = buildChart(ss, d, song.id);
-  return { charts, bpm: an.bpm, offset: an.offset, duration: an.dur, sections: detectSections(an) };
+  // 단계 2~3 등 상위 단계 채보는 필요할 때 만든다 (ss 보관)
+  return { charts, ss, bpm: an.bpm, offset: an.offset, duration: an.dur, sections: detectSections(an) };
 }
