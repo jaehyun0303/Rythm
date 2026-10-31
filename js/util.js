@@ -1,0 +1,71 @@
+// 공용 유틸: 저장소, 포맷터, 난수
+export const $ = (s, r = document) => r.querySelector(s);
+export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+export const fmtNum = (n) => Math.round(n).toLocaleString('en-US');
+export const pad2 = (n) => String(n).padStart(2, '0');
+export const fmtTime = (s) => {
+  s = Math.max(0, Math.floor(s));
+  return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60);
+};
+
+export function hashStr(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+export function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---- 저장소 (localStorage 실패 시 메모리로 폴백) ----
+const KEY = 'rythm.v1';
+const DEFAULTS = () => ({
+  profile: { name: 'PLAYER_01', xp: 0 },
+  settings: { speed: 5.5, offset: 0, volume: 0.8, hitsound: true, auto: false },
+  bests: {},
+  favorites: [],
+});
+let mem = null;
+export const store = {
+  data: null,
+  load() {
+    if (this.data) return this.data;
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) { d = mem; }
+    const def = DEFAULTS();
+    this.data = Object.assign(def, d || {});
+    this.data.settings = Object.assign(def.settings, (d && d.settings) || {});
+    this.data.profile = Object.assign(def.profile, (d && d.profile) || {});
+    return this.data;
+  },
+  save() {
+    mem = this.data;
+    try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) { /* ignore */ }
+  },
+};
+
+// ---- 레벨 / 레이팅 ----
+export const xpForLevel = (lv) => 1000 + 150 * lv;
+export function levelInfo(xp) {
+  let lv = 1;
+  while (xp >= xpForLevel(lv)) { xp -= xpForLevel(lv); lv++; }
+  return { lv, into: xp, need: xpForLevel(lv) };
+}
+export function chartRating(level, acc) {
+  const f = clamp((acc - 60) / 40, 0, 1);
+  return level * Math.pow(f, 1.6);
+}
+export function playerRating(bests) {
+  const arr = Object.values(bests).map((b) => b.rating || 0).sort((a, b) => b - a).slice(0, 10);
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / Math.min(10, Math.max(arr.length, 5));
+}

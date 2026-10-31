@@ -1,0 +1,7 @@
+# 저작권 음원은 실수로 커밋되지 않게 제외 (배포하려면 권리 확인 후 이 블록을 지워)
+songs/*.mp3
+songs/*.ogg
+songs/*.wav
+songs/*.m4a
+songs/*.flac
+node_modules/
