@@ -474,3 +474,5 @@ add('wts-showtime',
    ${sFade('wsh', 540, 0.5)}`);
 
 export const SCENES = S;
+// 다른 장면 파일에서 재사용하는 부품 모음
+export const H = { n0, lin, rad, sFade, sRings, sStars, fall, bokeh, shooting, aurora, cloudSea, sCloud, rays, speed, birds, spots, crowd, hills, sSkyline, heart, flower, branch, cup, notes, bulbs, drip };

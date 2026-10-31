@@ -2,6 +2,7 @@
 // 새 테마가 위에서 서서히 페이드인 되며 교체된다.
 import { mulberry32 } from './util.js';
 import { SCENES } from './scenes.js';
+import { SCENES2 } from './scenes2.js';
 
 const FADE = `<defs><linearGradient id="fd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07060d" stop-opacity="0"/><stop offset="1" stop-color="#07060d" stop-opacity=".94"/></linearGradient></defs>`;
 const fade = (y = 380) => `<rect x="0" y="${y}" width="1280" height="${720 - y}" fill="url(#fd)"/>`;
@@ -109,7 +110,7 @@ export const THEMES = {
 };
 
 export const THEME_IDS = Object.keys(THEMES);
-export const getTheme = (id) => THEMES[id] || SCENES[id];
+export const getTheme = (id) => THEMES[id] || SCENES[id] || SCENES2[id];
 
 // ids: 이 곡에서 쓰는 장면만 만든다 (생략하면 공용 테마 전체)
 export function buildThemes(container, ids = THEME_IDS) {
