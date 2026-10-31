@@ -11,25 +11,59 @@ store.load();
 const audio = new AudioEngine();
 audio.volume = store.data.settings.volume;
 
-let screen = 'title';
+let curScreen = 'title';
+const screen_ = () => curScreen;
 let optOpen = false;
 let optIdx = 0;
 let last = null; // 마지막 플레이 { song, diffIdx }
 let lastResult = null;
 
 function go(name) {
-  screen = name;
+  curScreen = name;
   $$('.screen').forEach((s) => s.classList.toggle('on', s.id === 'screen-' + name));
 }
 
 // ---- 스테이지 스케일 (1280×720 기준) ----
 const stage = $('#stage');
 function fit() {
-  const s = Math.min(innerWidth / 1280, innerHeight / 720);
-  stage.style.transform = `translate(${(innerWidth - 1280 * s) / 2}px,${(innerHeight - 720 * s) / 2}px) scale(${s})`;
+  const vv = window.visualViewport;
+  const w = vv ? vv.width : innerWidth, h = vv ? vv.height : innerHeight;
+  const s = Math.min(w / 1280, h / 720);
+  stage.style.transform = `translate(${(w - 1280 * s) / 2}px,${(h - 720 * s) / 2}px) scale(${s})`;
 }
 addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 150));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
 fit();
+
+// ---- 터치 기기 감지 / 저사양 모드 ----
+const isTouch = matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0 && !matchMedia('(pointer:fine)').matches;
+document.body.classList.toggle('touch', isTouch);
+if (store.data.settings.lowfx === undefined) store.data.settings.lowfx = isTouch;
+const applyFx = () => document.body.classList.toggle('lowfx', !!store.data.settings.lowfx);
+applyFx();
+addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ---- 전체화면 + 가로 고정 (지원되는 곳에서만) ----
+async function goFullscreen() {
+  const el = document.documentElement;
+  try {
+    if (!document.fullscreenElement && el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) { /* iOS 등 미지원 */ }
+}
+if (document.fullscreenEnabled) {
+  $('#btnFs').style.display = 'block';
+  $('#btnFs').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (document.fullscreenElement) document.exitFullscreen(); else goFullscreen();
+  });
+}
+// 세로로 돌리면 자동 일시정지
+matchMedia('(orientation:portrait)').addEventListener('change', (e) => {
+  if (e.matches && isTouch && screen_() === 'play' && (game.state === 'play' || game.state === 'lead')) game.togglePause();
+  setTimeout(fit, 150);
+});
 
 // ---- 앱 ----
 const app = {
@@ -65,6 +99,7 @@ const OPTS = [
   { key: 'offset', name: 'AUDIO OFFSET', min: -200, max: 200, step: 5, fmt: (v) => (v > 0 ? '+' : '') + v + ' ms' },
   { key: 'volume', name: 'MUSIC VOLUME', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
   { key: 'hitsound', name: 'HIT SOUND', bool: true },
+  { key: 'lowfx', name: 'LOW EFFECTS', bool: true },
   { key: 'auto', name: 'AUTO PLAY', bool: true },
 ];
 function renderOpts() {
@@ -93,8 +128,10 @@ function changeOpt(d) {
     st[o.key] = Math.round(v * 1000) / 1000;
   }
   if (o.key === 'volume') audio.setVolume(st.volume);
+  if (o.key === 'lowfx') applyFx();
   renderOpts();
 }
+$('#optDone').addEventListener('click', closeOptions);
 $('#optOv').addEventListener('click', (e) => { if (e.target.id === 'optOv') closeOptions(); });
 
 // ---- 키 입력 ----
@@ -110,26 +147,27 @@ addEventListener('keydown', (e) => {
     else if (['Enter', 'Tab', 'Escape'].includes(e.code)) closeOptions();
     return;
   }
-  if (screen === 'title') {
+  if (curScreen === 'title') {
     if (e.repeat) return;
     enterFromTitle();
-  } else if (screen === 'select') {
+  } else if (curScreen === 'select') {
     if (!e.repeat || e.code.startsWith('Arrow')) selectUI.onKey(e);
-  } else if (screen === 'play') {
+  } else if (curScreen === 'play') {
     game.onKeyDown(e);
-  } else if (screen === 'results') {
+  } else if (curScreen === 'results') {
     if (e.code === 'KeyR') app.startSong(last.song, last.diffIdx);
     else if (e.code === 'Enter' || e.code === 'Escape' || e.code === 'NumpadEnter') toSelect();
   }
 });
-addEventListener('keyup', (e) => { if (screen === 'play') game.onKeyUp(e); });
+addEventListener('keyup', (e) => { if (curScreen === 'play') game.onKeyUp(e); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && screen === 'play' && (game.state === 'play' || game.state === 'lead')) game.togglePause();
+  if (document.hidden && curScreen === 'play' && (game.state === 'play' || game.state === 'lead')) game.togglePause();
 });
 
 function toSelect() { selectUI.show(); go('select'); }
 async function enterFromTitle() {
   await audio.unlock();
+  if (isTouch) goFullscreen();
   toSelect();
 }
 $('#screen-title').addEventListener('click', enterFromTitle);

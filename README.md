@@ -11,6 +11,17 @@ python3 -m http.server 8000
 # → http://localhost:8000
 ```
 
+## 모바일 / PC
+
+- **PC**: 키보드 `D F J K`. 마우스로 레인을 클릭해도 돼요.
+- **모바일**: 가로로 들고 화면의 4개 레인을 직접 터치 (멀티터치 OK, 화면 어디든 레인 x 위치 기준). `SPACE` 대신 오버드라이브 패널을 탭하고, 곡 목록은 위아래 스와이프. 세로로 들면 회전 안내가 뜨고 플레이 중이면 자동 일시정지돼요.
+- 터치 기기는 **LOW EFFECTS** 가 기본 ON (글로우/스캔라인 제거로 프레임 확보). 옵션에서 끌 수 있어요.
+- 폰에서 열려면 서버가 폰이 닿는 주소여야 해요:
+  - 같은 와이파이: PC에서 `python3 -m http.server 8000 --bind 0.0.0.0` → 폰 브라우저에서 `http://<PC의 IP>:8000`
+  - 또는 GitHub Pages 등에 올리기 (이 경우 음원도 같이 올라가야 하니 저작권 주의)
+- 홈 화면에 추가하면 주소창 없는 전체화면 앱처럼 실행돼요 (iOS Safari 는 전체화면 API 가 없어서 이 방법이 가장 깔끔해요).
+- 블루투스 이어폰은 지연이 있으니 옵션의 **AUDIO OFFSET** 을 조정하세요.
+
 ## 음원 넣기
 
 `songs/faded.mp3`, `songs/shape-of-you.mp3`, `songs/sugar.mp3` 를 넣어요 (자세한 건 `songs/README.md`). 없으면 데모 비트로 플레이돼요.
@@ -50,6 +61,7 @@ PERFECT ±35ms · GREAT ±60ms · GOOD ±80ms (±80ms 밖은 MISS). 롱노트는
 ## 파일 구조
 
 ```
+manifest.webmanifest, icons/  홈 화면 추가(PWA)용
 index.html        3개 화면 + 오버레이 마크업 (1280×720 스테이지)
 css/style.css     목업 토큰/컴포넌트 스타일
 js/main.js        라우팅, 옵션, 키 입력

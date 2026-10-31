@@ -50,6 +50,7 @@ export class SongSelect {
       r.querySelector('.rt').textContent = s.title;
       r.querySelector('.ra').textContent = s.artist;
       r.addEventListener('click', () => {
+        if (this.dragged) return;
         const i = this.view.indexOf(s);
         if (i < 0) return;
         if (i === this.sel) this.start(); else this.move(i - this.sel);
@@ -60,6 +61,19 @@ export class SongSelect {
     $$('#filters .tab').forEach((b) => b.addEventListener('click', () => this.setFilter(b.dataset.f)));
     $('#btnStart').addEventListener('click', () => this.start());
     $('#btnOpt').addEventListener('click', () => this.app.openOptions());
+    $('#btnBack').addEventListener('click', () => this.app.back());
+    $('#btnFav').addEventListener('click', () => this.toggleFav());
+    // 위/아래 스와이프로 곡 이동 (탭은 그대로 클릭으로 처리)
+    let sy = null;
+    list.addEventListener('pointerdown', (e) => { sy = e.clientY; this.dragged = false; });
+    list.addEventListener('pointermove', (e) => {
+      if (sy === null) return;
+      const r = $('#stage').getBoundingClientRect(), k = r.height / 720;
+      const dy = (e.clientY - sy) / k;
+      if (Math.abs(dy) > 36) { this.move(dy < 0 ? 1 : -1); sy = e.clientY; this.dragged = true; }
+    });
+    const end = () => { sy = null; setTimeout(() => { this.dragged = false; }, 0); };
+    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
     $('#list').addEventListener('wheel', (e) => { e.preventDefault(); this.move(e.deltaY > 0 ? 1 : -1); }, { passive: false });
     $('#detail').addEventListener('wheel', (e) => e.stopPropagation());
   }

@@ -49,6 +49,7 @@ export class Game {
     this.cache = {};
     this.pool = { tap: [], ln: [] };
     this.specVals = new Array(SPEC_N).fill(0);
+    this.down = [false, false, false, false];
     this.build();
     this.frame = this.frame.bind(this);
   }
@@ -60,29 +61,60 @@ export class Game {
     for (let l = 0; l < 4; l++) {
       const p = document.createElement('div');
       p.className = 'pad'; p.style.left = l * LANE_W + 4 + 'px'; p.textContent = KEY_LABEL[l];
-      p.addEventListener('pointerdown', (e) => { e.preventDefault(); this.press(l, e.timeStamp); });
-      const up = (e) => this.release(l, e.timeStamp);
-      p.addEventListener('pointerup', up); p.addEventListener('pointerleave', up); p.addEventListener('pointercancel', up);
       pads.appendChild(p); this.padEls.push(p);
       const b = document.createElement('div');
       b.className = 'beam'; b.style.left = l * LANE_W + 4 + 'px'; beams.appendChild(b); this.beamEls.push(b);
       const u = document.createElement('div');
       u.className = 'burst'; u.style.left = l * LANE_W + 4 + 48.5 - 80 + 'px'; bursts.appendChild(u); this.burstEls.push(u);
     }
-    $('#pads').style.pointerEvents = 'auto';
+    this.bindPointers();
     const spec = $('#spec');
     let h = '';
     for (let i = 0; i < SPEC_N; i++) h += `<rect x="${(i * 10.7).toFixed(1)}" y="94" width="7" height="6" fill="#00f0ff"/>`;
     spec.innerHTML = h;
     this.specEls = [...spec.querySelectorAll('rect')];
     $('#btnPause').addEventListener('click', () => this.togglePause());
-    $('#odKey').addEventListener('click', () => this.activateOD());
+    $('#odPanel').addEventListener('click', () => this.activateOD());
     $('#pauseBtns').addEventListener('click', (e) => {
       const a = e.target.closest('button')?.dataset.a;
       if (a === 'resume') this.togglePause();
       else if (a === 'retry') this.cb.onRetry();
       else if (a === 'quit') this.cb.onQuit();
     });
+  }
+
+  // ---------- 터치/마우스 입력: 화면 어디를 눌러도 x 좌표로 레인 판정, 멀티터치 지원 ----------
+  laneAt(clientX) {
+    const r = $('#stage').getBoundingClientRect();
+    const x = ((clientX - r.left) / r.width) * 1280;
+    if (x < 400 || x > 880) return -1;
+    return clamp(Math.floor((x - 430) / LANE_W), 0, 3);
+  }
+  bindPointers() {
+    const scr = $('#screen-play');
+    this.ptr = new Map();
+    scr.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button,.ov,#odPanel')) return;
+      const lane = this.laneAt(e.clientX);
+      if (lane < 0) return;
+      e.preventDefault();
+      this.ptr.set(e.pointerId, lane);
+      this.press(lane, e.timeStamp);
+    });
+    const up = (e) => {
+      const l = this.ptr.get(e.pointerId);
+      if (l === undefined) return;
+      this.ptr.delete(e.pointerId);
+      this.release(l, e.timeStamp);
+    };
+    scr.addEventListener('pointerup', up);
+    scr.addEventListener('pointercancel', up);
+    scr.addEventListener('lostpointercapture', up);
+    addEventListener('blur', () => this.releaseAll());
+  }
+  releaseAll() {
+    if (this.ptr) this.ptr.clear();
+    for (let l = 0; l < 4; l++) if (this.down[l]) this.release(l, performance.now());
   }
 
   // ---------- 시작 ----------
@@ -102,6 +134,7 @@ export class Game {
     this.notes.forEach((n) => this.lanes[n.lane].push(n));
     this.qpos = [0, 0, 0, 0];
     this.down = [false, false, false, false];
+    this.ptr && this.ptr.clear();
     this.holding = [null, null, null, null];
     this.first = 0;
     this.counts = { perfect: 0, great: 0, good: 0, miss: 0 };
