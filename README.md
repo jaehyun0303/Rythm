@@ -67,7 +67,11 @@ python3 -m http.server 8000
 
 곡을 마디별 에너지로 분석해 INTRO / VERSE / BUILD / CHORUS 구간을 자동으로 나누고, 구간이 바뀔 때 배경이 부드럽게 전환돼요 (예: 네온 도시 → 푸른 하늘). 36초보다 긴 구간은 쪼개서 인접 테마와 번갈아 써요. HUD 의 구간 이름과 진행바 눈금도 이 분석 결과를 써요.
 
-테마: `cyber`(네온 도시) · `sky`(푸른 하늘) · `sunset`(석양) · `space`(우주) · `ember`(붉은 어둠)
+**곡 전용 장면**: 일부 곡은 공용 테마 대신 곡의 분위기에 맞춘 전용 장면 3개(조용함/중간/강함)를 써요 (`js/scenes.js`). 예: Blueming(벚꽃·꽃이 피어나는 봄), Beautiful Things(창가 → 황금빛 노을 → 폭발하는 호박빛), Welcome to the Show(빈 무대 → 스포트라이트 → 관객 함성). 새 곡에도 같은 방식으로 장면을 추가할 수 있어요 — 부품(꽃잎, 보케, 오로라, 스포트라이트, 관객 등)을 조합해서 `add('장면id', 배경CSS, svg)` 로 정의하고 `palette` 에 넣으면 돼요.
+
+자동 구간 분석이 평평한 곡은 `sections: [[시작초, '이름', 레벨0~2], ...]` 로 구간을 직접 줄 수 있어요.
+
+공용 테마: `cyber`(네온 도시) · `sky`(푸른 하늘) · `sunset`(석양) · `space`(우주) · `ember`(붉은 어둠)
 
 `js/songs.js` 에서 곡마다 조정할 수 있어요.
 
@@ -92,7 +96,8 @@ js/select.js      곡 선택 (캐러셀, 필터, 난이도, 미리듣기)
 js/results.js     결과 화면, 최고기록/레이팅/XP 저장
 js/audio.js       Web Audio 엔진, 정밀 클럭, 데모 비트 합성
 js/chart.js       채보 자동 생성 + 구간 검출 (DOM 의존 없음)
-js/themes.js      구간별 배경 테마 5종
+js/themes.js      구간별 배경 전환 엔진 + 공용 테마 5종
+js/scenes.js      곡 전용 배경 장면 24개 + 장면 부품 라이브러리
 js/songs.js       곡 목록
 js/cover.js       곡별 추상 커버 SVG
 ```

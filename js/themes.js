@@ -1,6 +1,7 @@
 // 곡 구간에 따라 바뀌는 배경 테마. 각 테마는 1280x720 레이어 하나(그라디언트 + SVG 풍경)이고,
 // 새 테마가 위에서 서서히 페이드인 되며 교체된다.
 import { mulberry32 } from './util.js';
+import { SCENES } from './scenes.js';
 
 const FADE = `<defs><linearGradient id="fd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07060d" stop-opacity="0"/><stop offset="1" stop-color="#07060d" stop-opacity=".94"/></linearGradient></defs>`;
 const fade = (y = 380) => `<rect x="0" y="${y}" width="1280" height="${720 - y}" fill="url(#fd)"/>`;
@@ -108,10 +109,12 @@ export const THEMES = {
 };
 
 export const THEME_IDS = Object.keys(THEMES);
+export const getTheme = (id) => THEMES[id] || SCENES[id];
 
-export function buildThemes(container) {
-  container.innerHTML = THEME_IDS.map((id) => {
-    const t = THEMES[id];
+// ids: 이 곡에서 쓰는 장면만 만든다 (생략하면 공용 테마 전체)
+export function buildThemes(container, ids = THEME_IDS) {
+  container.innerHTML = ids.filter((id) => getTheme(id)).map((id) => {
+    const t = getTheme(id);
     return `<div class="th" id="th-${id}"><div class="th-bg" style="background:${t.bg}"></div><svg viewBox="0 0 1280 720" preserveAspectRatio="none" aria-hidden="true">${t.svg}</svg></div>`;
   }).join('');
   // SVG id 충돌 방지: 같은 id(fd 등)를 여러 레이어가 쓰지만 내용이 동일해 문제없음
@@ -120,7 +123,7 @@ export function buildThemes(container) {
 let cur = null, z = 1, timer = 0;
 export function currentTheme() { return cur; }
 export function setTheme(id, instant) {
-  if (cur === id || !THEMES[id]) return;
+  if (cur === id || !getTheme(id)) return;
   const el = document.getElementById('th-' + id);
   if (!el) return;
   const all = [...document.querySelectorAll('.th')];

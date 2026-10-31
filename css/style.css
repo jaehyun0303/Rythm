@@ -6,14 +6,14 @@
 html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;user-select:none;-webkit-user-select:none}
 button{font:inherit}
 #stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;
-  background:var(--bg);font-family:'Chakra Petch',sans-serif;color:var(--tx)}
+  background:var(--bg);font-family:'Chakra Petch','Noto Sans KR',sans-serif;color:var(--tx)}
 .screen{position:absolute;left:0;top:0;width:1280px;height:720px;overflow:hidden;display:none}
 .screen.on{display:block;animation:scrIn .35s ease-out}
 @keyframes scrIn{from{opacity:0}to{opacity:1}}
 .abs{position:absolute}
 .rel{position:relative !important}
-.mono{font-family:'Share Tech Mono',monospace}
-.orb{font-family:'Orbitron',sans-serif}
+.mono{font-family:'Share Tech Mono','Noto Sans KR',monospace}
+.orb{font-family:'Orbitron','Noto Sans KR',sans-serif}
 .lbl{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--mut);text-transform:uppercase}
 .chroma{text-shadow:4px 0 rgba(255,42,109,.85),-4px 0 rgba(0,240,255,.85),0 0 26px rgba(0,240,255,.35)}
 .chroma-s{text-shadow:3px 0 rgba(255,42,109,.8),-3px 0 rgba(0,240,255,.8)}
@@ -191,3 +191,29 @@ body.touch #touchBar{display:block}
 .tp.f{background:var(--pk);box-shadow:0 0 8px rgba(255,42,109,.8)}
 .tp.rdy{border-color:var(--cy);box-shadow:0 0 8px rgba(0,240,255,.7);animation:blink 1.2s steps(2,start) infinite}
 #btnRaise.go{border-color:var(--pk);background:var(--pk);color:var(--bg);box-shadow:0 0 18px rgba(255,42,109,.55)}
+
+/* ---------- 곡 전용 장면 애니메이션 ---------- */
+.th .pf{animation:pfall 12s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pfall{0%{transform:translate(0,calc(-1 * var(--y0) - 50px)) rotate(0)}100%{transform:translate(var(--dx),calc(790px - var(--y0))) rotate(320deg)}}
+.th .bk{animation:bkf 7s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes bkf{from{transform:translateY(0) scale(1)}to{transform:translateY(-18px) scale(1.12)}}
+.th .ss{animation:shoot 9s linear infinite}
+@keyframes shoot{0%{transform:translate(0,0);opacity:0}3%{opacity:1}20%{transform:translate(-460px,230px);opacity:0}100%{transform:translate(-460px,230px);opacity:0}}
+.th .sway{animation:swayx 18s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes swayx{from{transform:translateX(-50px) scaleY(.88)}to{transform:translateX(50px) scaleY(1.12)}}
+.th .spin{animation:spinr 90s linear infinite}
+.th .spin2{animation:spinr 140s linear infinite reverse}
+@keyframes spinr{to{transform:rotate(360deg)}}
+.th .sp{animation:spx 1.2s linear infinite}
+@keyframes spx{from{transform:translateX(0)}to{transform:translateX(-1800px)}}
+.th .fly{animation:flyx 40s linear infinite}
+@keyframes flyx{from{transform:translateX(-120px)}to{transform:translateX(1420px)}}
+.th .swing{animation:swingr 6s ease-in-out infinite alternate}
+@keyframes swingr{from{transform:rotate(-15deg)}to{transform:rotate(15deg)}}
+.th .ls{animation:lsw 1.6s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes lsw{from{transform:rotate(-16deg)}to{transform:rotate(16deg)}}
+.th .nt{animation:ntf 12s linear infinite}
+@keyframes ntf{0%{transform:translate(0,40px);opacity:0}15%{opacity:1}100%{transform:translate(40px,-280px);opacity:0}}
+.th .rain{animation:rainf 1.1s linear infinite}
+@keyframes rainf{from{transform:translate(0,-760px)}to{transform:translate(-40px,0)}}
+.lowfx .th .rain{display:none}

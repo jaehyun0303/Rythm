@@ -20,11 +20,15 @@ const LEAD_IN = 3;
 const SPEC_N = 28;
 
 const DEFAULT_PALETTE = ['sky', 'sunset', 'cyber']; // 조용함 / 중간 / 강함
-const MAX_PIECE = 36; // 한 구간이 이보다 길면 쪼개서 인접 테마와 번갈아 사용 (초)
+const MAX_PIECE = 45; // 한 구간이 이보다 길면 쪼개서 인접 테마와 번갈아 사용 (초)
 
 // 분석된 구간 + 곡별 팔레트(또는 수동 지정 themes) -> 시간순 조각 목록
-export function buildTimeline(sections, song) {
+export function buildTimeline(sections, song, dur) {
   const pal = song.palette || DEFAULT_PALETTE;
+  // 수동 구간: [[시작초, '이름', 레벨(0~2)], ...] 이 있으면 자동 분석 대신 사용
+  if (song.sections) {
+    sections = song.sections.map(([t0, name, level], i, a) => ({ t0, t1: i + 1 < a.length ? a[i + 1][0] : dur, name, level }));
+  }
   const out = [];
   for (const s of sections) {
     const n = Math.max(1, Math.ceil((s.t1 - s.t0) / MAX_PIECE));
@@ -92,7 +96,6 @@ export class Game {
       u.className = 'burst'; u.style.left = l * LANE_W + 4 + 48.5 - 80 + 'px'; bursts.appendChild(u); this.burstEls.push(u);
     }
     this.bindPointers();
-    buildThemes($('#themes'));
     const spec = $('#spec');
     let h = '';
     for (let i = 0; i < SPEC_N; i++) h += `<rect x="${(i * 10.7).toFixed(1)}" y="94" width="7" height="6" fill="#00f0ff"/>`;
@@ -186,7 +189,8 @@ export class Game {
     $('#devTicks').innerHTML = '';
     $('#devBand').style.left = 145 - WIN.perfect * 1000 * 1.8 + 'px';
     $('#devBand').style.width = WIN.perfect * 2000 * 1.8 + 'px';
-    this.timeline = buildTimeline(entry.sections || [{ t0: 0, t1: this.duration, level: 1, name: 'TRACK' }], song);
+    this.timeline = buildTimeline(entry.sections || [{ t0: 0, t1: this.duration, level: 1, name: 'TRACK' }], song, this.duration);
+    buildThemes($('#themes'), [...new Set(this.timeline.map((p) => p.theme))]);
     this.tlIdx = 0;
     resetTheme();
     setTheme(this.timeline[0].theme, true);

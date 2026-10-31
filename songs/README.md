@@ -14,6 +14,14 @@
 | Spectre | `spectre.mp3` |
 | Understand | `understand.mp3` |
 | Out of Reach | `out-of-reach.mp3` |
+| Blueming (IU) | `blueming.mp3` |
+| Dreams (Lost Sky) | `dreams.mp3` |
+| Running In The Sky (Duggy) | `running-in-the-sky.mp3` |
+| Rewrite the Stars | `rewrite-the-stars.mp3` |
+| Beautiful Things | `beautiful-things.mp3` |
+| Cups (When I'm Gone) | `cups.mp3` |
+| 한 페이지가 될 수 있게 (DAY6) | `one-page.mp3` |
+| Welcome to the Show (DAY6) | `welcome-to-the-show.mp3` |
 
 - 파일 이름/경로는 `js/songs.js` 의 `audio` 값과 같아야 해요. mp3 / ogg / wav / m4a 모두 브라우저가 디코드할 수 있으면 돼요 (확장자만 맞춰서 `audio` 값을 수정).
 - 파일이 없으면 곡 선택 화면에 `NO AUDIO FILE · DEMO BEAT` 가 뜨고, 합성 데모 비트로 대신 재생돼요 (게임은 그대로 플레이 가능).
