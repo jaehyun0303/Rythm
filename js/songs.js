@@ -9,6 +9,7 @@
 //   preview   : 미리듣기 시작 지점(초)
 //   isNew     : NEW 탭에 표시
 //   cover     : { variant: 0|1|2, a: '#색', b: '#색' } (생략 가능)
+//   extreme   : true 면 NIGHTMARE/OVERLOAD 가 박자 격자를 거의 전부 채우는 극악 채보가 됨 (스트림+동시치기+롱노트)
 //   short     : 목록/HUD 에 쓸 짧은 제목 (긴 제목일 때)
 //   palette   : [조용한 구간, 중간 구간, 강한 구간] 의 배경 장면 id. 공용 테마(cyber/sky/…) 또는 js/scenes.js 의 곡 전용 장면. 기본 ['sky','sunset','cyber']
 //               테마: cyber(네온 도시) / sky(푸른 하늘) / sunset(석양) / space(우주) / ember(붉은 어둠)
@@ -85,14 +86,14 @@ export const SONGS = [
     id: 'blueming', title: 'BLUEMING', artist: 'IU',
     palette: ['blueming-dawn', 'blueming-petals', 'blueming-bloom'],
     audio: 'songs/blueming.mp3', bpm: 106, duration: 222,
-    levels: [5, 8, 12, 17, 20], preview: 124, isNew: true,
+    levels: [5, 8, 12, 17, 20], preview: 124,
     cover: { variant: 1, a: '#ff8fb8', b: '#9fb4ff' },
   },
   {
     id: 'dreams', title: 'DREAMS', artist: 'Lost Sky',
     palette: ['dreams-night', 'dreams-nebula', 'dreams-ascend'],
     audio: 'songs/dreams.mp3', bpm: 145, duration: 215,
-    levels: [6, 10, 14, 21, 24], preview: 70, isNew: true,
+    levels: [6, 10, 14, 21, 24], preview: 70,
     cover: { variant: 2, a: '#4dffd0', b: '#c06bff' },
   },
   {
@@ -100,7 +101,7 @@ export const SONGS = [
     palette: ['rits-dusk', 'rits-sunrise', 'rits-zenith'],
     sections: [[0, 'INTRO', 0], [10, 'VERSE', 1], [70, 'CHORUS', 2], [107, 'VERSE II', 1], [140, 'CHORUS II', 2], [195, 'FINALE', 2], [226, 'OUTRO', 0]],
     audio: 'songs/running-in-the-sky.mp3', bpm: 125, duration: 254,
-    levels: [6, 10, 14, 21, 24], preview: 154, isNew: true,
+    levels: [6, 10, 14, 21, 24], preview: 154,
     cover: { variant: 0, a: '#ffd27a', b: '#2d8cff' },
   },
   {
@@ -108,7 +109,7 @@ export const SONGS = [
     palette: ['rts-twilight', 'rts-constellations', 'rts-spectacle'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 0], [72, 'BUILD', 1], [90, 'CHORUS', 2], [150, 'FINALE', 2], [196, 'OUTRO', 0]],
     audio: 'songs/rewrite-the-stars.mp3', bpm: 83.33, duration: 223,
-    levels: [4, 6, 9, 12, 14], preview: 147, isNew: true,
+    levels: [4, 6, 9, 12, 14], preview: 147,
     cover: { variant: 2, a: '#ffd27a', b: '#b9a6ff' },
   },
   {
@@ -116,21 +117,21 @@ export const SONGS = [
     palette: ['bt-window', 'bt-golden', 'bt-burst'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 1], [60, 'BREAK', 0], [80, 'CHORUS', 2], [100, 'BRIDGE', 1], [115, 'CHORUS II', 2], [155, 'OUTRO', 0]],
     audio: 'songs/beautiful-things.mp3', bpm: 105, duration: 183,
-    levels: [5, 8, 11, 15, 18], preview: 87, isNew: true,
+    levels: [5, 8, 11, 15, 18], preview: 87,
     cover: { variant: 0, a: '#ffb070', b: '#ff6fa8' },
   },
   {
     id: 'cups', title: 'CUPS (WHEN I\'M GONE)', short: 'CUPS', artist: 'Anna Kendrick',
     palette: ['cups-table', 'cups-stage', 'cups-party'],
     audio: 'songs/cups.mp3', bpm: 130, duration: 127,
-    levels: [5, 9, 13, 18, 21], preview: 34, isNew: true,
+    levels: [5, 9, 13, 18, 21], preview: 34,
     cover: { variant: 2, a: '#f0b540', b: '#2a9d8f' },
   },
   {
     id: 'one-page', title: '한 페이지가 될 수 있게', artist: 'DAY6',
     palette: ['d6p-night', 'd6p-pages', 'd6p-together'],
     audio: 'songs/one-page.mp3', bpm: 87.5, duration: 206,
-    levels: [5, 7, 11, 15, 17], preview: 58, isNew: true,
+    levels: [5, 7, 11, 15, 17], preview: 58,
     cover: { variant: 1, a: '#8ab4ff', b: '#ffb7d0' },
   },
   {
@@ -138,7 +139,23 @@ export const SONGS = [
     palette: ['wts-backstage', 'wts-lights', 'wts-showtime'],
     sections: [[0, 'INTRO', 0], [10, 'VERSE', 1], [50, 'CHORUS', 2], [85, 'BREAK', 0], [110, 'CHORUS II', 2], [160, 'BRIDGE', 1], [175, 'FINAL CHORUS', 2], [205, 'OUTRO', 0]],
     audio: 'songs/welcome-to-the-show.mp3', bpm: 132, duration: 236,
-    levels: [6, 9, 14, 19, 23], preview: 71, isNew: true,
+    levels: [6, 9, 14, 19, 23], preview: 71,
     cover: { variant: 0, a: '#ff4fa8', b: '#4fe0ff' },
+  },
+  {
+    id: 'beethoven-virus', title: 'BEETHOVEN VIRUS', artist: 'BanYa · Diana Boncheva', extreme: true,
+    palette: ['bv-hall', 'bv-keys', 'bv-virus'],
+    sections: [[0, 'INTRO', 0], [10, 'DROP', 2], [80, 'BREAK', 1], [130, 'DROP II', 2], [170, 'BUILD', 1], [180, 'FINAL DROP', 2]],
+    audio: 'songs/beethoven-virus.mp3', bpm: 156, duration: 220,
+    levels: [9, 17, 28, 35, 42], preview: 44, isNew: true,
+    cover: { variant: 2, a: '#ff3a5a', b: '#b98aff' },
+  },
+  {
+    id: 'disappearance', title: '하츠네 미쿠의 소실', artist: 'cosMo@폭주P', extreme: true,
+    palette: ['cos-stage', 'cos-ribbon', 'cos-vanish'],
+    sections: [[0, 'INTRO', 0], [25, 'CHORUS', 2], [60, 'VERSE', 1], [75, 'CHORUS II', 2], [135, 'BREAK', 0], [145, 'CHORUS III', 2], [160, 'BRIDGE', 1], [175, 'FINAL CHORUS', 2], [275, 'OUTRO', 0]],
+    audio: 'songs/disappearance.mp3', bpm: 240, duration: 286,
+    levels: [12, 24, 42, 52, 62], preview: 111, isNew: true,
+    cover: { variant: 1, a: '#39e6d0', b: '#ff7ac8' },
   },
 ];

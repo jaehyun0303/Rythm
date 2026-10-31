@@ -193,6 +193,84 @@ export function buildChart(ss, diff0, seedKey, stage = 0) {
   return { diff: diff.key, stage, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur };
 }
 
+// ---------- 3-b) 극악 채보: 박자 격자를 거의 전부 채우는 스트림 + 패턴 + 동시치기 + 롱노트 ----------
+// 노트 위치는 전부 박자 격자(16분음표) 위에 놓인다. 조용한 마디만 성기게 하고 나머지는 쉬지 않고 이어짐.
+const PATS = [[0, 1, 2, 3], [3, 2, 1, 0], [0, 2, 1, 3], [3, 1, 2, 0], [0, 2, 0, 2], [1, 3, 1, 3], [0, 1, 0, 1], [2, 3, 2, 3], [0, 3, 1, 2], [3, 0, 2, 1], [1, 2, 1, 2], [0, 3, 0, 3], [1, 0, 3, 2], [2, 1, 0, 3]];
+export function buildBrutal(ss, diff, seedKey, stage = 0) {
+  const rng = mulberry32(hashStr(seedKey + ':' + diff.key + ':brutal'));
+  const { score, step, N, ml, ref, offset } = ss;
+  const over = diff.key === 'overload';
+  const fill = over ? 1 : 0.88;                       // 격자를 채우는 비율
+  const chordP = (over ? 0.55 : 0.3) + stage * 0.1;   // 동시치기 확률
+  const triP = (over ? 0.14 : 0.04) + stage * 0.05;   // 3키 동시치기
+  const lnP = over ? 0.55 : 0.3;                      // 롱노트 꽂을 확률
+  const sorted = [...score].sort((a, b) => a - b);
+  const med = sorted[N >> 1] || 0;
+  const notes = [];
+  const busy = [-9, -9, -9, -9];
+  let last = -1;
+  const freeLanes = (s) => [0, 1, 2, 3].filter((l) => busy[l] < s);
+  const pick = (s, want) => {
+    const f = freeLanes(s);
+    if (!f.length) return -1;
+    if (f.includes(want)) return want;
+    f.sort((a, b) => Math.abs(a - want) - Math.abs(b - want));
+    return f[0];
+  };
+  for (let m = 0; m * SPM < N; m++) {
+    const lm = ml[m] / ref;
+    if (lm < 0.04) continue;
+    const quiet = lm < 0.3;
+    for (let g = 0; g < 4; g++) {
+      let pat = PATS[Math.floor(rng() * PATS.length)];
+      for (let tries = 0; tries < 6 && pat[0] === last && rng() > 0.12; tries++) pat = PATS[Math.floor(rng() * PATS.length)];
+      for (let k = 0; k < 4; k++) {
+        const s = m * SPM + g * 4 + k;
+        if (s >= N) break;
+        const keep = quiet ? 0.5 : Math.min(1, fill + (score[s] > med ? 0.1 : 0));
+        if (rng() > keep) continue;
+        const lane = pick(s, pat[k]);
+        if (lane < 0) continue;
+        let len = 0;
+        if (k === 0 && !quiet && (g & 1) === 0 && rng() < lnP * 0.3) {
+          len = [6, 8, 10][Math.floor(rng() * 3)];
+          if (s + len >= N) len = 0;
+        }
+        const t = offset + s * step;
+        notes.push({ t, lane, len: len ? len * step : 0, end: len ? t + len * step : 0 });
+        busy[lane] = s + len;
+        last = lane;
+        if (!len && (k === 0 || score[s] > med) && rng() < chordP * (k === 0 ? 1.3 : 1)) {
+          const cand = freeLanes(s).filter((l) => l !== lane);
+          if (cand.length) {
+            const far = cand.filter((l) => Math.abs(l - lane) >= 2);
+            const pool = far.length ? far : cand;
+            const l2 = pool[Math.floor(rng() * pool.length)];
+            notes.push({ t, lane: l2, len: 0, end: 0 });
+            busy[l2] = s;
+            if (k === 0 && rng() < triP) {
+              const c3 = freeLanes(s).filter((l) => l !== lane && l !== l2);
+              if (c3.length) { const l3 = c3[Math.floor(rng() * c3.length)]; notes.push({ t, lane: l3, len: 0, end: 0 }); busy[l3] = s; }
+            }
+          }
+        }
+      }
+    }
+  }
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  const dens = new Array(19).fill(0);
+  for (const n of notes) dens[Math.min(18, Math.floor((n.t / ss.dur) * 19))]++;
+  return { diff: diff.key, stage, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur, brutal: true };
+}
+
+// 곡 플래그(extreme)에 따라 일반/극악 생성기를 고른다
+export function makeChart(ss, diff, seedKey, stage = 0, extreme = false) {
+  if (!extreme) return buildChart(ss, diff, seedKey, stage);
+  if (diff.ref >= 3) return buildBrutal(ss, diff, seedKey, stage);
+  const boost = { easy: 1.35, normal: 1.4, hard: 1.5 }[diff.key] || 1.4;
+  return buildChart(ss, { ...diff, per: Math.min(15, Math.round(diff.per * boost)), chord: diff.chord + (diff.key === 'easy' ? 0.1 : 0.25) }, seedKey, stage);
+}
+
 // ---------- 4) 곡 구간(섹션) 자동 검출: 마디별 에너지 -> 3단계 -> 짧은 구간 병합 ----------
 // 반환: [{ t0, t1, level(0 조용/1 중간/2 강함), name }]
 export function detectSections(an) {
@@ -246,7 +324,7 @@ export function generateAll(pcm, sr, song) {
   const an = analyze(pcm, sr, song.bpm);
   const ss = stepScores(an);
   const charts = {};
-  for (const d of DIFFS) charts[d.key] = buildChart(ss, d, song.id);
+  for (const d of DIFFS) charts[d.key] = makeChart(ss, d, song.id, 0, !!song.extreme);
   // 단계 2~3 등 상위 단계 채보는 필요할 때 만든다 (ss 보관)
   return { charts, ss, bpm: an.bpm, offset: an.offset, duration: an.dur, sections: detectSections(an) };
 }

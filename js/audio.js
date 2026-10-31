@@ -1,5 +1,5 @@
 // 오디오 엔진: 디코드/분석 캐시, 정밀 게임 클럭, 미리듣기, 스펙트럼, 히트사운드, 데모 비트 합성
-import { generateAll, buildChart, DIFFS } from './chart.js';
+import { generateAll, makeChart, DIFFS } from './chart.js';
 import { mulberry32 } from './util.js';
 
 const DEMO_SR = 22050;
@@ -84,7 +84,7 @@ export class AudioEngine {
     entry.chartFor = (diffKey, stage = 0) => {
       if (stage === 0) return entry.charts[diffKey];
       const k = diffKey + ':' + stage;
-      if (!entry.stageCharts[k]) entry.stageCharts[k] = buildChart(entry.ss, DIFFS.find((d) => d.key === diffKey), song.id, stage);
+      if (!entry.stageCharts[k]) entry.stageCharts[k] = makeChart(entry.ss, DIFFS.find((d) => d.key === diffKey), song.id, stage, !!song.extreme);
       return entry.stageCharts[k];
     };
     this.cache.set(song.id, entry);

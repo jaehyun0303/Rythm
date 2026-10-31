@@ -19,7 +19,7 @@ export function showResults(r, level) {
 
   // ---- 저장: 최고 기록 / 레이팅 / XP ----
   const beforeRating = playerRating(d.bests);
-  const rating = chartRating(level, r.acc);
+  const rating = chartRating(Math.min(level, 30), r.acc); // 극악 곡의 초고레벨로 레이팅이 폭주하지 않게 상한
   const isRecord = !r.failed && !r.auto && (!prev || r.score > prev.score);
   if (isRecord) d.bests[key] = { score: r.score, acc: r.acc, rank: r.rank, combo: r.maxCombo, ghost: r.ghost, rating: Math.max(rating, prev ? prev.rating || 0 : 0) };
   else if (!r.failed && !r.auto && prev && rating > (prev.rating || 0)) prev.rating = rating;

@@ -4,7 +4,7 @@ import { mulberry32 } from './util.js';
 import { H } from './scenes.js';
 
 export const SCENES2 = (() => {
-  const { n0, lin, rad, sFade, sRings, sStars, fall, bokeh, shooting, sCloud, rays, speed, spots, hills, sSkyline, heart, bulbs, drip, cloudSea } = { ...H };
+  const { n0, lin, rad, sFade, sRings, sStars, fall, bokeh, shooting, sCloud, rays, speed, spots, hills, sSkyline, heart, bulbs, drip, cloudSea, notes, crowd } = { ...H };
   const S = {};
   const add = (id, bg, svg) => { S[id] = { bg, svg }; };
 
@@ -468,6 +468,114 @@ export const SCENES2 = (() => {
      ${fall(50, 13, ['#ffffff', '#fff0b8', '#ffc8d8'], 'rect', 1.4, 4, 5)}
      ${bokeh('oswb', 20, 4, ['#ffffff', '#fff0b8'], 12, 50, 0.55, 40, 660)}
      ${sFade('oswd', 450, 0.8)}`);
+
+  // ---------- 극악 곡 전용 부품 ----------
+  const dataRain = (seed, n, col, len = 22) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) { const x = n0(r() * 1300); h += `<rect class="rain" style="animation-duration:${(0.6 + r() * 1.2).toFixed(2)}s;animation-delay:${(-r()).toFixed(2)}s" x="${x}" y="${740 - len}" width="2" height="${n0(len * (0.5 + r()))}" fill="${col}" opacity="${(0.3 + r() * 0.5).toFixed(2)}"/>`; }
+    return h;
+  };
+  const staff = (sid, y, seed, col) => {
+    const r = mulberry32(seed);
+    let h = `<g stroke="${col}" stroke-opacity=".35" stroke-width="1.4">${[0, 1, 2, 3, 4].map((i) => `<line x1="0" y1="${y + i * 12}" x2="1280" y2="${y + i * 12}"/>`).join('')}</g><g class="drift ${['', 'd2'][seed % 2]}" fill="${col}" fill-opacity=".6" stroke="${col}" stroke-opacity=".6">`;
+    for (let x = 40; x < 1300; x += 70 + r() * 60) { const yy = y + n0(r() * 5) * 12 - 6; h += `<ellipse cx="${n0(x)}" cy="${yy}" rx="8" ry="5.6" transform="rotate(-20 ${n0(x)} ${yy})"/><line x1="${n0(x) + 7}" y1="${yy - 2}" x2="${n0(x) + 7}" y2="${yy - 36}" stroke-width="2"/>`; }
+    return h + '</g>';
+  };
+  const chandelier = (cx, y, col) => {
+    let h = `<line x1="${cx}" y1="0" x2="${cx}" y2="${y}" stroke="${col}" stroke-width="3"/><g class="tw" style="animation-duration:5s">`;
+    for (let k = -3; k <= 3; k++) { const x = cx + k * 54, yy = y + 40 + Math.abs(k) * 12; h += `<line x1="${cx}" y1="${y}" x2="${x}" y2="${yy}" stroke="${col}" stroke-width="2"/><circle cx="${x}" cy="${yy}" r="9" fill="#fff2c0"/><circle cx="${x}" cy="${yy}" r="30" fill="#ffd27a" opacity=".16"/><path d="M${x} ${yy + 9} L${x - 4} ${yy + 30} L${x + 4} ${yy + 30}Z" fill="${col}" opacity=".7"/>`; }
+    return h + `</g><ellipse cx="${cx}" cy="${y}" rx="120" ry="14" fill="none" stroke="${col}" stroke-width="3"/>`;
+  };
+  const pianoKeys = (sid, vx, vy, col1, col2) => {
+    let h = `<defs>${lin(sid + 'wk', [[0, col1, 0.05], [1, col1, 0.55]])}</defs>`;
+    const n = 15;
+    for (let i = 0; i < n; i++) {
+      const x0 = -300 + i * ((1880) / n), x1 = x0 + 1880 / n - 4;
+      h += `<polygon points="${vx + (x0 - vx) * 0.22},${vy + 40} ${vx + (x1 - vx) * 0.22},${vy + 40} ${x1},760 ${x0},760" fill="url(#${sid}wk)" stroke="${col2}" stroke-opacity=".5"/>`;
+      if (i % 7 !== 2 && i % 7 !== 6) {
+        const bx0 = x1 - 14, bx1 = bx0 + 30;
+        h += `<polygon points="${vx + (bx0 - vx) * 0.22},${vy + 40} ${vx + (bx1 - vx) * 0.22},${vy + 40} ${bx1 + 4},${n0(vy + 40 + (760 - vy - 40) * 0.58)} ${bx0 + 2},${n0(vy + 40 + (760 - vy - 40) * 0.58)}" fill="#05030c" opacity=".92"/>`;
+      }
+    }
+    return h;
+  };
+  const virus = (cx, cy, r, col, cls = 'spin2') => {
+    let h = `<g class="${cls}" style="transform-origin:${cx}px ${cy}px;transform-box:view-box"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" opacity=".8"/>`;
+    for (let i = 0; i < 14; i++) { const a = (i * 360 / 14) * Math.PI / 180, x1 = cx + Math.cos(a) * r, y1 = cy + Math.sin(a) * r, x2 = cx + Math.cos(a) * (r * 1.45), y2 = cy + Math.sin(a) * (r * 1.45); h += `<line x1="${n0(x1)}" y1="${n0(y1)}" x2="${n0(x2)}" y2="${n0(y2)}" stroke="${col}" stroke-width="${n0(r * 0.12)}" stroke-linecap="round" opacity=".8"/><circle cx="${n0(x2)}" cy="${n0(y2)}" r="${n0(r * 0.16)}" fill="${col}" opacity=".9"/>`; }
+    return h + `<circle cx="${cx}" cy="${cy}" r="${n0(r * 0.45)}" fill="#05030c" opacity=".55"/><circle cx="${cx - r * 0.2}" cy="${cy - r * 0.2}" r="${n0(r * 0.16)}" fill="#fff" opacity=".35"/></g>`;
+  };
+  const ribbon = (sid, d, col, w) => `<defs>${lin(sid, [[0, col, 0], [0.4, col, 0.8], [1, col, 0]], 0, 0, 0, 1)}</defs><path class="sway" style="animation-duration:${n0(10 + w)}s" d="${d}" fill="none" stroke="url(#${sid})" stroke-width="${w}" stroke-linecap="round"/>`;
+  const pixels = (n, seed, cols, y0, y1) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) { const s = n0(10 + r() * 28); h += `<rect class="gl" style="animation-duration:${(1 + r() * 2.4).toFixed(1)}s;animation-delay:${(-r() * 3).toFixed(1)}s" x="${n0(r() * 1260)}" y="${n0(y0 + r() * (y1 - y0))}" width="${s}" height="${s}" fill="${cols[i % cols.length]}" opacity="${(0.3 + r() * 0.5).toFixed(2)}"/>`; }
+    return h;
+  };
+
+  // ================= 11) Beethoven Virus : 클래식을 감염시킨 바이러스 =================
+  add('bv-hall',
+    'linear-gradient(to bottom,#0a0624 0,#1a1048 54%,#0a0618 100%)',
+    `${rings('#ffd27a', '#b98aff', 0.4, 0.32)}
+     <g fill="#0a0620">${[0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${60 + i * 190}" y="170" width="40" height="470"/><path d="M${60 + i * 190} 170 q50 -60 100 0" />`).join('')}</g>
+     ${staff('bvs', 100, 3, '#ffd27a')}${staff('bvs2', 470, 8, '#b98aff')}
+     ${chandelier(640, 110, '#ffd27a')}
+     ${spots('bvh', [[260, '#ffe9bd', 0.55, 8, 0, 120]], 120)}
+     <g fill="#05030c"><path d="M110 640 Q150 590 260 596 L400 604 L400 650 L110 650Z"/><rect x="130" y="650" width="8" height="60"/><rect x="360" y="650" width="8" height="60"/><path d="M130 600 L330 520 L400 600Z" opacity=".95"/></g>
+     ${notes(10, 5, '#ffd27a')}
+     ${bokeh('bvhb', 14, 3, ['#ffd27a', '#b98aff'], 8, 30, 0.45, 140, 620)}
+     ${sFade('bvhd', 450)}`);
+  add('bv-keys',
+    'radial-gradient(ellipse 600px 380px at 640px 300px,rgba(140,80,255,.45),rgba(140,80,255,0)),linear-gradient(to bottom,#07031c 0,#180a46 56%,#05030c 100%)',
+    `${rings('#b98aff', '#4fe0ff', 0.45, 0.38)}
+     ${pianoKeys('bvk', 640, 330, '#b98aff', '#4fe0ff')}
+     ${staff('bvk1', 150, 5, '#4fe0ff')}
+     ${notes(18, 4, '#ffffff')}
+     ${glitch(10, 3, ['#ff3a5a', '#4fe0ff'], 60, 640)}
+     ${shooting('bvk', 3, 7, '#d6c8ff')}
+     ${sFade('bvkd', 480, 0.7)}`);
+  add('bv-virus',
+    'radial-gradient(ellipse 560px 420px at 640px 290px,rgba(255,30,60,.55),rgba(255,30,60,0)),linear-gradient(to bottom,#080206 0,#2a0612 54%,#07020a 100%)',
+    `${rays('bvr', 640, 290, 20, '#ff3a5a', 0.45)}
+     ${rings('#ff3a5a', '#7aff7a', 0.6, 0.5)}
+     ${virus(640, 290, 90, '#ff3a5a', 'spin')}${virus(180, 190, 54, '#7aff7a')}${virus(1120, 420, 66, '#ff3a5a')}${virus(250, 520, 40, '#ff8a3a')}${virus(900, 112, 40, '#7aff7a')}
+     ${staff('bvr', 560, 9, '#ff7a8a')}
+     ${lightning('bvl', 420, 3, '#ff6a7a')}${lightning('bvl2', 860, 8, '#ff6a7a')}
+     ${glitch(22, 4, ['#ff3a5a', '#7aff7a', '#ffffff'], 40, 680)}
+     ${shards(30, 6, ['#ff3a5a', '#ffffff', '#7aff7a'], 40, 680)}
+     ${embers(60, 2, '#ff9a8a', 200)}
+     ${sFade('bvrd', 450)}`);
+
+  // ================= 12) 하츠네 미쿠의 소실 : 사라져 가는 가상의 가수 =================
+  add('cos-stage',
+    'linear-gradient(to bottom,#02121a 0,#06323c 56%,#03141a 100%)',
+    `${rings('#39e6d0', '#ff7ac8', 0.4, 0.34)}
+     ${spots('cst', [[300, '#39e6d0', 0.55, 7, 0, 90], [640, '#ffffff', 0.35, 9, -2, 70], [980, '#ff7ac8', 0.5, 8, -4, 90]], 90)}
+     <defs>${lin('cst-g', [[0, '#39e6d0', 0], [1, '#39e6d0', 0.55]])}</defs>
+     <g stroke="#39e6d0" stroke-opacity=".5" stroke-width="1.4">${Array.from({ length: 9 }, (_, i) => `<line x1="640" y1="420" x2="${-400 + i * 260}" y2="720"/>`).join('')}${[0, 1, 2, 3, 4].map((i) => { const y = 440 + i * i * 14 + i * 20; return `<line x1="0" y1="${y}" x2="1280" y2="${y}"/>`; }).join('')}</g>
+     ${crowd(9, 640, ['#39e6d0', '#ff7ac8', '#ffffff'])}
+     ${bokeh('cstb', 14, 2, ['#39e6d0', '#ff7ac8'], 20, 70, 0.3, 100, 560)}
+     ${sFade('cstd', 470, 0.6)}`);
+  add('cos-ribbon',
+    'radial-gradient(ellipse 560px 420px at 640px 300px,rgba(57,230,208,.4),rgba(57,230,208,0)),linear-gradient(to bottom,#03222c 0,#0a4a56 52%,#03141c 100%)',
+    `${rings('#7ffbe8', '#ff7ac8', 0.5, 0.4)}
+     ${ribbon('cr1', 'M-40 -20 C 240 120 80 320 360 430 S 560 640 700 760', '#39e6d0', 46)}
+     ${ribbon('cr2', 'M1320 -20 C 1040 120 1200 320 920 430 S 720 640 580 760', '#7ffbe8', 40)}
+     ${ribbon('cr3', 'M-40 80 C 300 40 220 380 520 400', '#ff7ac8', 18)}${ribbon('cr4', 'M1320 80 C 980 40 1060 380 760 400', '#ff7ac8', 18)}
+     ${dataRain(4, 70, '#9fffee')}
+     ${bokeh('crb', 18, 3, ['#7ffbe8', '#ffffff', '#ff9ad8'], 8, 38, 0.5, 80, 640)}
+     ${sStars(60, 33, 400, '#e8ffff', 1.2)}
+     ${sFade('crd', 450)}`);
+  add('cos-vanish',
+    'radial-gradient(ellipse 600px 440px at 640px 280px,rgba(255,255,255,.65),rgba(57,230,208,.3) 40%,rgba(57,230,208,0) 70%),linear-gradient(to bottom,#041a24 0,#0a5a66 46%,#021016 100%)',
+    `${rays('cvr', 640, 280, 24, '#ffffff', 0.55)}
+     ${rings('#ffffff', '#39e6d0', 0.75, 0.6)}
+     <circle cx="640" cy="280" r="100" fill="#ffffff" opacity=".95"/><circle cx="640" cy="280" r="220" fill="#7ffbe8" opacity=".2"/>
+     ${pixels(90, 4, ['#ffffff', '#39e6d0', '#7ffbe8', '#ff7ac8'], 20, 700)}
+     ${dataRain(8, 110, '#ffffff', 30)}
+     ${speed('cvs', 14, 5, '#9fffee', 60, 640)}
+     ${glitch(20, 3, ['#39e6d0', '#ffffff', '#ff7ac8'], 40, 680)}
+     ${sFade('cvd', 450, 0.8)}`);
 
   return S;
 })();
