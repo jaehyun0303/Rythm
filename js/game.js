@@ -1,6 +1,7 @@
 // 플레이 화면: 하이웨이 렌더링, 입력/판정, HUD
 import { $, clamp, fmtNum, fmtTime } from './util.js';
 import { coverSVG } from './cover.js';
+import { buildThemes, setTheme, resetTheme } from './themes.js';
 
 export const LINE = 690;       // 판정선 y (하이웨이 로컬 좌표)
 const HW_H = 700;
@@ -18,7 +19,30 @@ const OD_MULT = 1.5;
 const LEAD_IN = 3;
 const SPEC_N = 28;
 
-const SECTIONS = [[0, 'INTRO'], [0.12, 'VERSE'], [0.28, 'CHORUS'], [0.48, 'BRIDGE'], [0.64, 'CHORUS II'], [0.88, 'OUTRO']];
+const DEFAULT_PALETTE = ['sky', 'sunset', 'cyber']; // 조용함 / 중간 / 강함
+const MAX_PIECE = 36; // 한 구간이 이보다 길면 쪼개서 인접 테마와 번갈아 사용 (초)
+
+// 분석된 구간 + 곡별 팔레트(또는 수동 지정 themes) -> 시간순 조각 목록
+export function buildTimeline(sections, song) {
+  const pal = song.palette || DEFAULT_PALETTE;
+  const out = [];
+  for (const s of sections) {
+    const n = Math.max(1, Math.ceil((s.t1 - s.t0) / MAX_PIECE));
+    const len = (s.t1 - s.t0) / n;
+    for (let k = 0; k < n; k++) {
+      const lv = k % 2 === 0 ? s.level : s.level < 2 ? s.level + 1 : s.level - 1;
+      out.push({ t0: s.t0 + k * len, t1: s.t0 + (k + 1) * len, name: s.name, theme: pal[lv], first: k === 0 });
+    }
+  }
+  if (song.themes) { // 수동 지정: [[초, 테마id], ...] 가 있으면 우선
+    for (const p of out) {
+      let id = null;
+      for (const [t, th] of song.themes) if (p.t0 >= t - 0.01) id = th;
+      if (id) p.theme = id;
+    }
+  }
+  return out;
+}
 
 const JUDGE = {
   perfect: { txt: 'PERFECT', col: '#fff', glow: 'rgba(0,240,255,.6)' },
@@ -68,6 +92,7 @@ export class Game {
       u.className = 'burst'; u.style.left = l * LANE_W + 4 + 48.5 - 80 + 'px'; bursts.appendChild(u); this.burstEls.push(u);
     }
     this.bindPointers();
+    buildThemes($('#themes'));
     const spec = $('#spec');
     let h = '';
     for (let i = 0; i < SPEC_N; i++) h += `<rect x="${(i * 10.7).toFixed(1)}" y="94" width="7" height="6" fill="#00f0ff"/>`;
@@ -152,7 +177,7 @@ export class Game {
 
     // HUD 정적 값
     $('#hCover').innerHTML = coverSVG(song, { size: 64, border: 2 });
-    $('#hTitle').textContent = song.title;
+    $('#hTitle').textContent = song.short || song.title;
     $('#hArtist').textContent = song.artist;
     $('#hDiff').textContent = diffName + ' ' + level;
     $('#hBpm').textContent = Math.round(chart.bpm) + ' BPM';
@@ -161,7 +186,11 @@ export class Game {
     $('#devTicks').innerHTML = '';
     $('#devBand').style.left = 145 - WIN.perfect * 1000 * 1.8 + 'px';
     $('#devBand').style.width = WIN.perfect * 2000 * 1.8 + 'px';
-    $('#progTicks').innerHTML = SECTIONS.slice(1).map(([p]) => `<i style="left:${p * 100}%"></i>`).join('');
+    this.timeline = buildTimeline(entry.sections || [{ t0: 0, t1: this.duration, level: 1, name: 'TRACK' }], song);
+    this.tlIdx = 0;
+    resetTheme();
+    setTheme(this.timeline[0].theme, true);
+    $('#progTicks').innerHTML = this.timeline.filter((p, i) => i > 0 && p.first).map((p) => `<i style="left:${(p.t0 / this.duration) * 100}%"></i>`).join('');
     $('#judgeText').style.opacity = 0; $('#judgeSub').style.opacity = 0;
     $('#screen-play').classList.remove('od-on');
     $('#odGlow').style.opacity = 0;
@@ -606,9 +635,14 @@ export class Game {
     const p = this.duration ? tt / this.duration : 0;
     $('#progFill').style.width = p * 100 + '%';
     $('#progMark').style.left = p * 100 + '%';
-    let sec = SECTIONS[0][1];
-    for (const [sp, name] of SECTIONS) if (p >= sp) sec = name;
-    set('secName', sec);
+    const tl = this.timeline;
+    if (t !== undefined && tl) {
+      let i = this.tlIdx;
+      while (i > 0 && t < tl[i].t0) i--;
+      while (i < tl.length - 1 && t >= tl[i + 1].t0) i++;
+      if (i !== this.tlIdx || force) { this.tlIdx = i; setTheme(tl[i].theme); }
+    }
+    set('secName', tl ? tl[this.tlIdx].name : '');
     // 판정 텍스트 페이드
     if (this.judgeAt && performance.now() - this.judgeAt > 700 && this.state !== 'lead') {
       $('#judgeText').style.opacity = 0; $('#judgeSub').style.opacity = 0; this.judgeAt = 0;

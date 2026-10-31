@@ -54,6 +54,19 @@ python3 -m http.server 8000
 
 곡 id + 난이도로 시드를 고정하므로 같은 음원이면 항상 같은 채보가 나와요. 박자가 안 맞는 곡은 `songs.js` 의 `bpm` 을 정확히 고쳐 보세요 (가변 BPM 곡은 격자 보정이 어긋날 수 있어요).
 
+## 구간별 배경 테마
+
+곡을 마디별 에너지로 분석해 INTRO / VERSE / BUILD / CHORUS 구간을 자동으로 나누고, 구간이 바뀔 때 배경이 부드럽게 전환돼요 (예: 네온 도시 → 푸른 하늘). 36초보다 긴 구간은 쪼개서 인접 테마와 번갈아 써요. HUD 의 구간 이름과 진행바 눈금도 이 분석 결과를 써요.
+
+테마: `cyber`(네온 도시) · `sky`(푸른 하늘) · `sunset`(석양) · `space`(우주) · `ember`(붉은 어둠)
+
+`js/songs.js` 에서 곡마다 조정할 수 있어요.
+
+```js
+palette: ['space', 'sky', 'cyber'],       // [조용한 구간, 중간 구간, 강한 구간]
+themes: [[0, 'cyber'], [75, 'sky']],      // (선택) 자동 대신 직접 지정: 75초부터 하늘
+```
+
 ## 판정
 
 PERFECT ±35ms · GREAT ±60ms · GOOD ±80ms (±80ms 밖은 MISS). 롱노트는 머리 판정 + 끝까지 유지, 일찍 떼면 MISS 로 전환. SYNC 가 0% 가 되면 실패.
@@ -69,7 +82,8 @@ js/game.js        하이웨이 렌더링, 판정, HUD, 오버드라이브, 고�
 js/select.js      곡 선택 (캐러셀, 필터, 난이도, 미리듣기)
 js/results.js     결과 화면, 최고기록/레이팅/XP 저장
 js/audio.js       Web Audio 엔진, 정밀 클럭, 데모 비트 합성
-js/chart.js       채보 자동 생성 (DOM 의존 없음)
+js/chart.js       채보 자동 생성 + 구간 검출 (DOM 의존 없음)
+js/themes.js      구간별 배경 테마 5종
 js/songs.js       곡 목록
 js/cover.js       곡별 추상 커버 SVG
 ```

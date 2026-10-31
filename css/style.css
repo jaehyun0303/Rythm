@@ -123,7 +123,6 @@ button{font:inherit}
 @keyframes jpop{0%{transform:skewX(-10deg) scale(1.35)}100%{transform:skewX(-10deg) scale(1)}}
 #combo.bump{animation:cbump .12s ease-out}
 @keyframes cbump{0%{transform:scale(1.08)}100%{transform:scale(1)}}
-.od-on #ringA{stroke:#00f0ff;stroke-opacity:.7}
 #progTicks i{position:absolute;top:-3px;width:2px;height:12px;background:rgba(233,247,255,.5)}
 
 /* 옵션 */
@@ -159,3 +158,25 @@ body.touch #touchBar{display:block}
 .lowfx #syncBar,.lowfx #odRing{filter:none !important}
 .lowfx .burst{display:none}
 .lowfx .chroma,.lowfx .chroma-s{text-shadow:2px 0 rgba(255,42,109,.85),-2px 0 rgba(0,240,255,.85)}
+
+/* ---------- 구간별 배경 테마 ---------- */
+#themes,#scrim{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none}
+#themes{isolation:isolate;z-index:0}
+#scrim{background:linear-gradient(to bottom,rgba(7,6,13,.5) 0,rgba(7,6,13,0) 170px)}
+.th{position:absolute;left:0;top:0;width:1280px;height:720px;opacity:0;transition:opacity 1.9s ease}
+.th.on{opacity:1}
+.th.inst{transition:none}
+.th-bg,.th>svg{position:absolute;left:0;top:0;width:1280px;height:720px}
+.th .drift{animation:drift 70s ease-in-out infinite alternate}
+.th .drift.d2{animation-duration:95s;animation-direction:alternate-reverse}
+.th .drift.d3{animation-duration:120s}
+.th .tw{animation:twinkle 3.6s ease-in-out infinite}
+.th .em{animation:rise 7s linear infinite}
+@keyframes drift{from{transform:translateX(-70px)}to{transform:translateX(70px)}}
+@keyframes twinkle{50%{opacity:.2}}
+@keyframes rise{from{transform:translateY(0);opacity:.9}to{transform:translateY(-300px);opacity:0}}
+.lowfx .th *{animation:none !important}
+@media (prefers-reduced-motion:reduce){.th *{animation:none !important}}
+#secName{transition:color .4s}
+.row .rt{max-width:calc(100% - 64px - 84px);overflow:hidden;text-overflow:ellipsis}
+.row.sel .rt{max-width:calc(100% - 110px - 84px)}

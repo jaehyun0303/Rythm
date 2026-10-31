@@ -52,7 +52,7 @@ export function showResults(r, level) {
 
   // ---- 곡 정보 ----
   $('#rCover').innerHTML = coverSVG(r.song, { size: 72, border: 2 });
-  $('#rSong').textContent = r.song.title;
+  $('#rSong').textContent = r.song.short || r.song.title;
   $('#rArtist').textContent = r.song.artist;
   $('#rDiff').textContent = df.name + ' ' + level;
   $('#rBpm').textContent = Math.round(r.chart.bpm) + ' BPM';

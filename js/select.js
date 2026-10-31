@@ -15,16 +15,28 @@ const SLOT = {
   '3': { top: 562, left: 160, w: 440, h: 60, o: 0.7 },
 };
 
+// 긴 제목은 최대 3줄로 균형 있게 나눔 (줄 수가 늘면 글자 크기를 줄임)
 function titleLines(t) {
   const w = t.split(' ');
   if (w.length < 2) return [t];
-  let best = 1, diff = 1e9;
-  for (let i = 1; i < w.length; i++) {
-    const d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length);
-    if (d < diff) { diff = d; best = i; }
+  const k = t.length > 22 && w.length >= 3 ? 3 : 2;
+  if (k === 2) {
+    let best = 1, diff = 1e9;
+    for (let i = 1; i < w.length; i++) {
+      const d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length);
+      if (d < diff) { diff = d; best = i; }
+    }
+    return [w.slice(0, best).join(' '), w.slice(best).join(' ')];
   }
-  return [w.slice(0, best).join(' '), w.slice(best).join(' ')];
+  let bestSplit = null, bestMax = 1e9;
+  for (let i = 1; i < w.length - 1; i++) for (let j = i + 1; j < w.length; j++) {
+    const L = [w.slice(0, i).join(' '), w.slice(i, j).join(' '), w.slice(j).join(' ')];
+    const m = Math.max(...L.map((x) => x.length));
+    if (m < bestMax) { bestMax = m; bestSplit = L; }
+  }
+  return bestSplit;
 }
+export const disp = (s) => s.short || s.title;
 
 export class SongSelect {
   constructor(app) {
@@ -47,7 +59,7 @@ export class SongSelect {
       r.innerHTML = `<div class="rbar"></div><div class="rc">${coverSVG(s, { size: 44, border: 0 })}</div>
         <div class="rt"></div><div class="ra"></div><div class="rfav">★</div><div class="rlv"></div>
         <div class="rchips"><span class="chip pk"></span><span class="chip cy"></span></div><div class="rrank"></div>`;
-      r.querySelector('.rt').textContent = s.title;
+      r.querySelector('.rt').textContent = disp(s);
       r.querySelector('.ra').textContent = s.artist;
       r.addEventListener('click', () => {
         if (this.dragged) return;
@@ -182,12 +194,14 @@ export class SongSelect {
     const chart = entry ? entry.charts[d.key] : null;
     $('#dCover').innerHTML = coverSVG(s, { size: 220, border: 1 });
     $('#dNo').textContent = 'TRACK ' + pad2(this.songs.indexOf(s) + 1);
-    $('#dTitle').replaceChildren(...titleLines(s.title).map((l) => {
+    const tl = titleLines(s.title), big = tl.length < 3;
+    $('#dTitle').style.fontSize = big ? '32px' : '24px';
+    $('#dTitle').replaceChildren(...tl.map((l) => {
       const d = document.createElement('div');
-      d.style.height = '36px'; d.textContent = l; return d;
+      d.style.height = (big ? 36 : 28) + 'px'; d.textContent = l; return d;
     }));
     $('#dArtist').textContent = s.artist;
-    $('#dArtist').style.top = titleLines(s.title).length === 1 ? '90px' : '126px';
+    $('#dArtist').style.top = (tl.length === 1 ? 90 : tl.length === 2 ? 126 : 134) + 'px';
     $('#dBpm').textContent = entry ? Math.round(entry.bpm) : Math.round(s.bpm);
     $('#dTime').textContent = fmtTime(entry ? entry.duration : s.duration);
     $('#dNotes').textContent = chart ? fmtNum(chart.total) : '…';

@@ -183,10 +183,59 @@ export function buildChart(ss, diff, seedKey) {
   return { diff: diff.key, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur };
 }
 
+// ---------- 4) 곡 구간(섹션) 자동 검출: 마디별 에너지 -> 3단계 -> 짧은 구간 병합 ----------
+// 반환: [{ t0, t1, level(0 조용/1 중간/2 강함), name }]
+export function detectSections(an) {
+  const { env, hopSec, dur, bpm, offset } = an;
+  const M = (60 / bpm) * 4;
+  const shift = offset % M;
+  const n = Math.max(1, Math.ceil((dur - shift) / M));
+  const e = new Float64Array(n);
+  for (let m = 0; m < n; m++) {
+    const a = Math.max(0, Math.floor((shift + m * M) / hopSec)), b = Math.min(env.length, Math.floor((shift + (m + 1) * M) / hopSec));
+    let sum = 0;
+    for (let i = a; i < b; i++) sum += env[i];
+    e[m] = b > a ? sum / (b - a) : 0;
+  }
+  // 3-탭 평활 후 분위수 기준으로 3단계
+  const sm = e.map((v, i) => 0.25 * (e[Math.max(0, i - 1)]) + 0.5 * v + 0.25 * (e[Math.min(n - 1, i + 1)]));
+  const sorted = [...sm].sort((x, y) => x - y);
+  const q1 = sorted[Math.floor(n * 0.34)], q2 = sorted[Math.floor(n * 0.67)];
+  let lv = Array.from(sm, (v) => (v < q1 ? 0 : v < q2 ? 1 : 2));
+  // 런 구성 후, 최소 길이 미만은 가장 가까운 이웃에 병합
+  const minLen = clamp(dur * 0.07, 10, 22);
+  let runs = [];
+  lv.forEach((l, i) => { if (runs.length && runs[runs.length - 1].l === l) runs[runs.length - 1].n++; else runs.push({ l, s: i, n: 1 }); });
+  const avg = (r) => { let t = 0; for (let i = r.s; i < r.s + r.n; i++) t += sm[i]; return t / r.n; };
+  for (let guard = 0; guard < 200; guard++) {
+    let k = runs.findIndex((r) => r.n * M < minLen);
+    if (k < 0 || runs.length <= 1) break;
+    const r = runs[k];
+    const L = runs[k - 1], R = runs[k + 1];
+    let tgt = !L ? R : !R ? L : Math.abs(avg(L) - avg(r)) <= Math.abs(avg(R) - avg(r)) ? L : R;
+    tgt.n += r.n; tgt.s = Math.min(tgt.s, r.s);
+    runs.splice(k, 1);
+    // 인접 런 같은 레벨이면 합치기
+    for (let i = runs.length - 1; i > 0; i--) if (runs[i].l === runs[i - 1].l) { runs[i - 1].n += runs[i].n; runs.splice(i, 1); }
+  }
+  // 이름 붙이기
+  const count = {};
+  return runs.map((r, i) => {
+    const t0 = i === 0 ? 0 : shift + r.s * M;
+    const t1 = i === runs.length - 1 ? dur : shift + (r.s + r.n) * M;
+    let base = r.l === 2 ? 'CHORUS' : r.l === 1 ? 'BUILD' : 'VERSE';
+    if (i === 0 && r.l === 0) base = 'INTRO';
+    else if (i === runs.length - 1 && r.l === 0) base = 'OUTRO';
+    count[base] = (count[base] || 0) + 1;
+    const ord = ['', '', ' II', ' III', ' IV', ' V', ' VI'][count[base]] ?? ' ' + count[base];
+    return { t0, t1, level: r.l, name: base + ord };
+  });
+}
+
 export function generateAll(pcm, sr, song) {
   const an = analyze(pcm, sr, song.bpm);
   const ss = stepScores(an);
   const charts = {};
   for (const d of DIFFS) charts[d.key] = buildChart(ss, d, song.id);
-  return { charts, bpm: an.bpm, offset: an.offset, duration: an.dur };
+  return { charts, bpm: an.bpm, offset: an.offset, duration: an.dur, sections: detectSections(an) };
 }
