@@ -872,5 +872,51 @@ export const SCENES2 = (() => {
      ${fall(30, 9, ['#ffffff', '#ffe0e8'], 'petal', 0.9)}
      ${sFade('lvhd', 470, 0.78)}`);
 
+  // ---------- 5차 부품 ----------
+  const saguaro = (x, base, s, col) => `<g transform="translate(${x} ${base}) scale(${s})" fill="${col}"><rect x="-9" y="-150" width="18" height="150" rx="9"/><path d="M-9 -70 H-34 a12 12 0 0 1 -12 -12 V-112 a10 10 0 0 1 20 0 V-86 H-9Z"/><path d="M9 -96 H30 a12 12 0 0 0 12 -12 V-128 a10 10 0 0 0 -20 0 V-108 H9Z"/></g>`;
+  const poles = (base, col, wireCol) => {
+    let h = '';
+    const xs = [60, 330, 590, 850, 1110];
+    xs.forEach((x, i) => { const hh = 190 - i * 14; h += `<rect x="${x - 4}" y="${base - hh}" width="8" height="${hh}" fill="${col}"/><rect x="${x - 36}" y="${base - hh + 14}" width="72" height="7" fill="${col}"/>`; });
+    for (let k = 0; k < 3; k++) { let d = ''; xs.forEach((x, i) => { const hh = 190 - i * 14, y = base - hh + 18 + k * 0; d += (i ? ` Q${n0((xs[i - 1] + x) / 2)} ${n0(y + 22)} ${x + (k - 1) * 28} ${y}` : `M${x + (k - 1) * 28} ${y}`); }); h += `<path d="${d}" fill="none" stroke="${wireCol}" stroke-width="1.6" opacity=".7"/>`; }
+    return h;
+  };
+  const milkyWay = (sid) => `<defs>${lin(sid + 'mw', [[0, '#b8a8ff', 0], [0.5, '#e8d8ff', 0.28], [1, '#b8a8ff', 0]], 0, 0, 1, 1)}</defs><polygon points="-100,520 -100,360 1380,-60 1380,100" fill="url(#${sid}mw)"/>`;
+  const roadPersp = (sid, vx, vy, col, dash) => `<polygon points="${vx - 30},${vy} ${vx + 30},${vy} 1150,720 130,720" fill="${col}"/>${[0, 1, 2, 3, 4, 5, 6].map((i) => { const t = (i + 1) / 7, y = vy + t * t * (720 - vy), w = 2 + t * 14, h = 6 + t * 42; return `<rect x="${n0(vx - w / 2)}" y="${n0(y)}" width="${n0(w)}" height="${n0(h)}" fill="${dash}" opacity="${(0.45 + t * 0.45).toFixed(2)}"/>`; }).join('')}`;
+
+  // ================= 19) Nevada : 사막의 밤, 달리는 길 위의 그리움 =================
+  add('nev-night',
+    'linear-gradient(to bottom,#04051c 0,#101a52 50%,#2a1a50 100%)',
+    `${sStars(160, 83, 420, '#e8f0ff', 1.5)}
+     ${milkyWay('nvn')}
+     ${rings('#b8a8ff', '#ffd9a0', 0.3, 0.26)}
+     ${shooting('nvn', 3, 6, '#ffffff')}
+     ${mesas('#0a0820', 590, 3, 1)}
+     ${saguaro(180, 640, 1.5, '#05030f')}${saguaro(1090, 650, 1.8, '#05030f')}${saguaro(940, 640, 1.0, '#05030f')}
+     <rect x="0" y="650" width="1280" height="70" fill="#05030f"/>
+     ${bokeh('nvnb', 10, 3, ['#ffd9a0', '#b8a8ff'], 4, 12, 0.7, 380, 640)}
+     ${sFade('nvnd', 470)}`);
+  add('nev-road',
+    'linear-gradient(to bottom,#2a1a6a 0,#b0508a 38%,#ff8a5a 66%,#ffd08a 100%)',
+    `${rings('#ffe0a0', '#ffb0c8', 0.45, 0.38)}
+     <circle cx="640" cy="360" r="110" fill="#fff0c8" opacity=".92"/><circle cx="640" cy="360" r="240" fill="#ffd08a" opacity=".22"/>
+     ${mesas('#5a2a50', 440, 4, 0.95)}${mesas('#2a1238', 520, 8, 1)}
+     ${poles(560, '#12081e', '#2a1238')}
+     ${roadPersp('nvr', 640, 440, '#15091f', '#ffe0a0')}
+     ${saguaro(150, 660, 1.4, '#0a0414')}${saguaro(1140, 670, 1.6, '#0a0414')}
+     ${bokeh('nvrb', 10, 5, ['#ffe0a0', '#ffb0c8'], 6, 22, 0.6, 140, 520)}
+     ${sFade('nvrd', 480, 0.8)}`);
+  add('nev-neon',
+    'linear-gradient(to bottom,#12043a 0,#3a0a6a 48%,#14041e 100%)',
+    `${sStars(60, 31, 240, '#ffe8ff', 1.2)}
+     ${rings('#ff4fd8', '#4fe0ff', 0.55, 0.45)}
+     ${spots('nvs', [[200, '#ffffff', 0.45, 7, 0, 70], [520, '#ffd04f', 0.4, 8, -2, 70], [860, '#4fe0ff', 0.45, 6.5, -3, 70], [1130, '#ff4fd8', 0.45, 7.5, -1, 70]], 70)}
+     ${sSkyline('#0c0420', 12, 640, 60, 300, 1)}
+     ${[[90, 330, 80, 200, '#ff4fd8'], [260, 380, 60, 150, '#4fe0ff'], [980, 340, 70, 190, '#ffd04f'], [1130, 400, 60, 130, '#ff4fd8']].map(([x, y, w, h, c], i) => neon(x, y, w, h, c, 6, i * 0.6)).join('')}
+     <g class="tw"><polygon points="640,70 662,124 720,124 674,158 692,214 640,180 588,214 606,158 560,124 618,124" fill="none" stroke="#ffd04f" stroke-width="5"/><polygon points="640,70 662,124 720,124 674,158 692,214 640,180 588,214 606,158 560,124 618,124" fill="none" stroke="#ffd04f" stroke-width="16" opacity=".2"/></g>
+     ${fireworks(5, 3, ['#ffd04f', '#ff4fd8', '#4fe0ff'])}
+     ${bokeh('nvnb2', 20, 4, ['#ffd04f', '#ff4fd8', '#4fe0ff'], 10, 44, 0.5, 120, 660)}
+     ${sFade('nvsd', 480, 0.7)}`);
+
   return S;
 })();

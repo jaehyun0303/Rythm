@@ -163,14 +163,14 @@ export const SONGS = [
     palette: ['imm-dusk', 'imm-armor', 'imm-rise'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 1], [30, 'BREAK', 0], [35, 'CHORUS', 2], [70, 'VERSE II', 0], [110, 'CHORUS II', 2], [135, 'BREAK', 0], [150, 'FINAL CHORUS', 2]],
     audio: 'songs/immortals.mp3', bpm: 108, duration: 190,
-    levels: [5, 9, 12, 18, 21], preview: 56, isNew: true,
+    levels: [5, 9, 12, 18, 21], preview: 56,
     cover: { variant: 0, a: '#ffd27a', b: '#4aa8ff' },
   },
   {
     id: 'fate', title: 'FATE (나는 아픈건 딱 질색이니까)', short: 'FATE', artist: '(G)I-DLE',
     palette: ['fat-thread', 'fat-tarot', 'fat-crimson'],
     audio: 'songs/fate.mp3', bpm: 115, duration: 162,
-    levels: [6, 9, 14, 20, 22], preview: 91, isNew: true,
+    levels: [6, 9, 14, 20, 22], preview: 91,
     cover: { variant: 2, a: '#ff3a5a', b: '#c9a8ff' },
   },
   {
@@ -178,7 +178,7 @@ export const SONGS = [
     palette: ['mk-meadow', 'mk-castle', 'mk-royal'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 0], [45, 'BUILD', 1], [90, 'BREAK', 0], [105, 'BUILD II', 1], [130, 'CHORUS', 2], [220, 'FINALE', 2], [245, 'OUTRO', 0]],
     audio: 'songs/my-kingdom.mp3', bpm: 124, duration: 264,
-    levels: [5, 9, 14, 19, 23], preview: 169, isNew: true,
+    levels: [5, 9, 14, 19, 23], preview: 169,
     cover: { variant: 1, a: '#ffd04f', b: '#a88bff' },
   },
   {
@@ -186,7 +186,7 @@ export const SONGS = [
     palette: ['sup-dawn', 'sup-sonic', 'sup-burst'],
     sections: [[0, 'INTRO', 0], [25, 'PRE-CHORUS', 1], [35, 'CHORUS', 2], [65, 'VERSE', 1], [90, 'CHORUS II', 2], [115, 'BREAK', 0], [130, 'FINAL CHORUS', 2], [160, 'OUTRO', 0]],
     audio: 'songs/supersonic.mp3', bpm: 140, duration: 175,
-    levels: [6, 10, 15, 22, 25], preview: 98, isNew: true,
+    levels: [6, 10, 15, 22, 25], preview: 98,
     cover: { variant: 0, a: '#ff8ac8', b: '#8ae8ff' },
   },
   {
@@ -194,7 +194,7 @@ export const SONGS = [
     palette: ['mon-lair', 'mon-jaw', 'mon-rave'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 0], [30, 'DROP', 2], [45, 'BUILD', 1], [55, 'DROP II', 2], [80, 'BREAK', 0], [95, 'BUILD II', 1], [100, 'DROP III', 2], [120, 'FINAL DROP', 2], [150, 'OUTRO', 0]],
     audio: 'songs/monster.mp3', bpm: 128, duration: 168,
-    levels: [5, 9, 13, 18, 21], preview: 61, isNew: true,
+    levels: [5, 9, 13, 18, 21], preview: 61,
     cover: { variant: 2, a: '#7aff4a', b: '#c06bff' },
   },
   {
@@ -202,7 +202,15 @@ export const SONGS = [
     palette: ['lov-roof', 'lov-mirror', 'lov-heart'],
     sections: [[0, 'INTRO', 0], [20, 'VERSE', 1], [50, 'CHORUS', 2], [60, 'VERSE II', 0], [80, 'BUILD', 1], [120, 'CHORUS II', 2], [135, 'BRIDGE', 0], [165, 'FINAL CHORUS', 1], [215, 'OUTRO', 0]],
     audio: 'songs/love-yourself.mp3', bpm: 100, duration: 232,
-    levels: [5, 8, 12, 17, 20], preview: 116, isNew: true,
+    levels: [5, 8, 12, 17, 20], preview: 116,
     cover: { variant: 1, a: '#ff9a6a', b: '#b8c8ff' },
+  },
+  {
+    id: 'nevada', title: 'NEVADA', artist: 'Vicetone feat. Cozi Zuehlsdorff',
+    palette: ['nev-night', 'nev-road', 'nev-neon'],
+    sections: [[0, 'INTRO', 0], [20, 'VERSE', 1], [50, 'CHORUS', 2], [75, 'BUILD', 1], [85, 'CHORUS II', 2], [110, 'BREAK', 0], [125, 'BUILD II', 1], [165, 'FINAL CHORUS', 2], [195, 'OUTRO', 0]],
+    audio: 'songs/nevada.mp3', bpm: 124, duration: 209,
+    levels: [5, 9, 14, 19, 23], preview: 54, isNew: true,
+    cover: { variant: 1, a: '#ffb06a', b: '#b8a8ff' },
   },
 ];
