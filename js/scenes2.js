@@ -4,7 +4,7 @@ import { mulberry32 } from './util.js';
 import { H } from './scenes.js';
 
 export const SCENES2 = (() => {
-  const { n0, lin, rad, sFade, sRings, sStars, fall, bokeh, shooting, sCloud, rays, speed, spots, hills, sSkyline, heart, bulbs, drip, cloudSea, notes, crowd } = { ...H };
+  const { n0, lin, rad, sFade, sRings, sStars, fall, bokeh, shooting, sCloud, rays, speed, spots, hills, sSkyline, heart, bulbs, drip, cloudSea, notes, crowd, aurora } = { ...H };
   const S = {};
   const add = (id, bg, svg) => { S[id] = { bg, svg }; };
 
@@ -917,6 +917,128 @@ export const SCENES2 = (() => {
      ${fireworks(5, 3, ['#ffd04f', '#ff4fd8', '#4fe0ff'])}
      ${bokeh('nvnb2', 20, 4, ['#ffd04f', '#ff4fd8', '#4fe0ff'], 10, 44, 0.5, 120, 660)}
      ${sFade('nvsd', 480, 0.7)}`);
+
+  // ---------- 6차 부품 ----------
+  const photo = (x, y, w, h2, rot, tint, cls = 'drift') => `<g class="${cls}"><g transform="rotate(${rot} ${x + w / 2} ${y + h2 / 2})"><rect x="${x}" y="${y}" width="${w}" height="${h2}" fill="#f4ead8"/><rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${h2 - 30}" fill="${tint}" opacity=".85"/><polygon points="${x + 8},${y + h2 - 22} ${x + w * 0.4},${y + h2 * 0.45} ${x + w * 0.62},${y + h2 * 0.7} ${x + w * 0.78},${y + h2 * 0.5} ${x + w - 8},${y + h2 - 22}" fill="#00000030"/><circle cx="${x + w * 0.72}" cy="${y + h2 * 0.28}" r="${n0(w * 0.09)}" fill="#fff6d0" opacity=".9"/></g></g>`;
+  const clothesline = (y, sag, seed, tints, skipFrom = 99) => {
+    const r = mulberry32(seed);
+    let h = `<path d="M-10 ${y} Q640 ${y + sag} 1290 ${y}" fill="none" stroke="#3a2418" stroke-width="2.4"/>`;
+    for (let i = 0; i < 7; i++) { if (i >= skipFrom) continue; const t = (i + 0.5) / 7, x = -10 + t * 1300, yy = y + 2 * (1 - t) * t * sag; h += `<rect x="${n0(x - 3)}" y="${n0(yy - 4)}" width="6" height="14" fill="#8a5a3a"/>` + photo(n0(x - 46), n0(yy + 6), 92, 112, n0((r() - 0.5) * 12), tints[i % tints.length], ['drift', 'drift d2', 'drift d3'][i % 3]); }
+    return h;
+  };
+  const filmStrip = (y, rot, col, tints, seed) => {
+    const r = mulberry32(seed);
+    let h = `<g class="drift ${['', 'd2', 'd3'][seed % 3]}"><g transform="rotate(${rot} 640 ${y + 40})"><rect x="-200" y="${y}" width="1700" height="80" fill="${col}"/>`;
+    for (let x = -190; x < 1500; x += 22) h += `<rect x="${x}" y="${y + 6}" width="12" height="8" fill="#0a0a0a"/><rect x="${x}" y="${y + 66}" width="12" height="8" fill="#0a0a0a"/>`;
+    for (let x = -180; x < 1500; x += 118) h += `<rect x="${x}" y="${y + 18}" width="104" height="44" fill="${tints[n0(r() * 9) % tints.length]}" opacity=".85"/>`;
+    return h + '</g></g>';
+  };
+  const candle = (x, y, s, col) => `<g transform="translate(${x} ${y}) scale(${s})"><circle cy="-48" r="46" fill="#ffd27a" opacity=".16"/><rect x="-9" y="-40" width="18" height="40" fill="${col}"/><path class="flick" d="M0 -78 C 10 -62 12 -52 0 -42 C -12 -52 -10 -62 0 -78Z" fill="#ffd27a"/><path class="flick" d="M0 -64 C 5 -56 5 -50 0 -44 C -5 -50 -5 -56 0 -64Z" fill="#fff6d0"/></g>`;
+  const glass = (cx, cy, s, rot, col) => `<g transform="translate(${cx} ${cy}) rotate(${rot}) scale(${s})"><path d="M-24 -80 L24 -80 L18 -10 Q0 8 -18 -10Z" fill="${col}" fill-opacity=".35" stroke="${col}" stroke-width="3"/><path d="M-20 -50 L20 -50 L18 -12 Q0 4 -18 -12Z" fill="#ffd27a" opacity=".6"/><rect x="-3" y="-6" width="6" height="56" fill="${col}" fill-opacity=".7"/><ellipse cx="0" cy="52" rx="26" ry="5" fill="${col}" fill-opacity=".7"/></g>`;
+  const snow = (n, seed, size = 1) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const x = n0(r() * 1280), y0 = n0(r() * 720), rr = (1.2 + r() * 3.2) * size, dx = n0((r() - 0.5) * 140);
+      h += `<g transform="translate(${x} ${y0})"><g class="pf" style="--y0:${y0}px;--dx:${dx}px;animation-duration:${(7 + r() * 11).toFixed(1)}s;animation-delay:${(-r() * 18).toFixed(1)}s"><circle r="${rr.toFixed(1)}" fill="#ffffff" opacity="${(0.5 + r() * 0.5).toFixed(2)}"/></g></g>`;
+    }
+    return h;
+  };
+  const pine = (x, base, hgt, col) => { let h = `<rect x="${x - 5}" y="${base - 14}" width="10" height="16" fill="${col}"/>`; for (let k = 0; k < 4; k++) { const w = hgt * (0.46 - k * 0.07), yy = base - 14 - k * hgt * 0.22; h += `<polygon points="${x - w},${n0(yy)} ${x + w},${n0(yy)} ${x},${n0(yy - hgt * 0.34)}" fill="${col}"/><polygon points="${n0(x - w * 0.5)},${n0(yy - hgt * 0.17)} ${n0(x + w * 0.5)},${n0(yy - hgt * 0.17)} ${x},${n0(yy - hgt * 0.34)}" fill="#eaf2ff" opacity=".5"/>`; } return h; };
+  const snowman = (x, base, s, col) => `<g transform="translate(${x} ${base}) scale(${s})"><circle cy="-46" r="46" fill="${col}"/><circle cy="-112" r="34" fill="${col}"/><circle cy="-158" r="24" fill="${col}"/><rect x="-22" y="-196" width="44" height="22" fill="#12183a"/><rect x="-32" y="-176" width="64" height="7" fill="#12183a"/><polygon points="0,-160 30,-152 0,-148" fill="#ff8a3a"/><circle cx="-8" cy="-166" r="2.6" fill="#12183a"/><circle cx="8" cy="-166" r="2.6" fill="#12183a"/><path d="M-34 -118 L-92 -150 M34 -118 L92 -146" stroke="#3a2418" stroke-width="5" stroke-linecap="round"/><circle cy="-120" r="3.5" fill="#12183a"/><circle cy="-100" r="3.5" fill="#12183a"/></g>`;
+  const house = (x, base, w, h2, wall, roof, lit) => `<rect x="${x}" y="${base - h2}" width="${w}" height="${h2}" fill="${wall}"/><polygon points="${x - 10},${base - h2} ${x + w + 10},${base - h2} ${x + w / 2},${base - h2 - w * 0.5}" fill="${roof}"/><polygon points="${x - 6},${base - h2 - 2} ${x + w + 6},${base - h2 - 2} ${x + w / 2},${base - h2 - w * 0.5 + 2} ${x + w / 2},${base - h2 - w * 0.5 - 6}" fill="#eaf2ff" opacity=".85"/><rect x="${x + w * 0.2}" y="${base - h2 * 0.65}" width="${w * 0.22}" height="${h2 * 0.32}" fill="${lit}"/><rect x="${x + w * 0.58}" y="${base - h2 * 0.65}" width="${w * 0.22}" height="${h2 * 0.32}" fill="${lit}"/><circle cx="${x + w * 0.31}" cy="${base - h2 * 0.49}" r="${w * 0.22}" fill="${lit}" opacity=".18"/><rect x="${x + w * 0.72}" y="${base - h2 - w * 0.4}" width="12" height="${w * 0.32}" fill="${wall}"/><ellipse class="drift" cx="${x + w * 0.72 + 6}" cy="${base - h2 - w * 0.5}" rx="14" ry="9" fill="#cdd8ff" opacity=".35"/>`;
+  const flake = (cx, cy, r, col) => `<g class="spin2" style="transform-origin:${cx}px ${cy}px;transform-box:view-box" stroke="${col}" stroke-width="3" stroke-linecap="round" opacity=".8">${[0, 60, 120].map((a) => `<line x1="${n0(cx - Math.cos(a * Math.PI / 180) * r)}" y1="${n0(cy - Math.sin(a * Math.PI / 180) * r)}" x2="${n0(cx + Math.cos(a * Math.PI / 180) * r)}" y2="${n0(cy + Math.sin(a * Math.PI / 180) * r)}"/>`).join('')}${[0, 60, 120, 180, 240, 300].map((a) => { const ca = Math.cos(a * Math.PI / 180), sa = Math.sin(a * Math.PI / 180), bx = cx + ca * r * 0.62, by = cy + sa * r * 0.62; return `<line x1="${n0(bx)}" y1="${n0(by)}" x2="${n0(bx + Math.cos((a + 40) * Math.PI / 180) * r * 0.3)}" y2="${n0(by + Math.sin((a + 40) * Math.PI / 180) * r * 0.3)}"/><line x1="${n0(bx)}" y1="${n0(by)}" x2="${n0(bx + Math.cos((a - 40) * Math.PI / 180) * r * 0.3)}" y2="${n0(by + Math.sin((a - 40) * Math.PI / 180) * r * 0.3)}"/>`; }).join('')}</g>`;
+  const swingSet = (cx, base, hgt, col) => `<g stroke="${col}" stroke-width="9" stroke-linecap="round" fill="none"><path d="M${cx - 150} ${base} L${cx - 90} ${base - hgt} M${cx - 30} ${base} L${cx - 90} ${base - hgt} M${cx + 30} ${base} L${cx + 90} ${base - hgt} M${cx + 150} ${base} L${cx + 90} ${base - hgt} M${cx - 100} ${base - hgt} L${cx + 100} ${base - hgt}"/></g><g class="swing" style="transform-origin:${cx - 40}px ${base - hgt}px;transform-box:view-box;animation-duration:6s"><path d="M${cx - 58} ${base - hgt} L${cx - 58} ${base - 70} M${cx + 2} ${base - hgt} L${cx + 2} ${base - 70}" stroke="${col}" stroke-width="3" fill="none"/><rect x="${cx - 64}" y="${base - 72}" width="72" height="8" rx="3" fill="${col}"/></g>`;
+  const pendulum = (cx, top, len, r, col, dur) => `<g class="swing" style="transform-origin:${cx}px ${top}px;transform-box:view-box;animation-duration:${dur}s"><line x1="${cx}" y1="${top}" x2="${cx}" y2="${top + len}" stroke="${col}" stroke-width="6"/><circle cx="${cx}" cy="${top + len}" r="${r}" fill="${col}"/><circle cx="${cx}" cy="${top + len}" r="${r * 1.8}" fill="${col}" opacity=".16"/><circle cx="${cx - r * 0.3}" cy="${top + len - r * 0.3}" r="${r * 0.28}" fill="#fff" opacity=".5"/></g>`;
+  const tide = (col, y, amp, dur, op) => `<path class="sway" style="animation-duration:${dur}s" d="M-120 ${y} ${Array.from({ length: 9 }, (_, i) => `Q${-20 + i * 170} ${y - amp * (i % 2 ? 1 : -1)} ${50 + i * 170} ${y}`).join(' ')} L1500 720 L-120 720Z" fill="${col}" opacity="${op}"/>`;
+
+  // ================= 20) Memories : 곁에 없는 이들을 위한 건배 =================
+  add('mem-album',
+    'linear-gradient(to bottom,#3a2418 0,#6a4a30 54%,#2a1a12 100%)',
+    `<defs>${lin('mal-s', [[0, '#ffe2a8', 0.45], [1, '#ffe2a8', 0]], 0, 0, 1, 1)}</defs>
+     ${sRings('#ffd9a0', '#ffb08a', 0.32, 0.26)}
+     <polygon points="880,0 1130,0 760,720 360,720" fill="url(#mal-s)"/>
+     ${clothesline(120, 90, 3, ['#7a9ac8', '#c8806a', '#8ac8a0', '#d8b868'], 5)}
+     ${clothesline(330, 60, 8, ['#c88aa8', '#a8c878', '#6a8ac8', '#d8a068'])}
+     ${bokeh('mal', 22, 4, ['#ffe2a8', '#ffffff'], 3, 10, 0.8, 100, 640)}
+     ${sFade('mald', 460, 0.9)}`);
+  add('mem-film',
+    'linear-gradient(to bottom,#0a1c24 0,#1a3a44 54%,#0a1218 100%)',
+    `<defs>${lin('mfl-b', [[0, '#fff0c8', 0.4], [1, '#fff0c8', 0]], 0, 0, 1, 0)}</defs>
+     ${sRings('#ffd9a0', '#6ac8d8', 0.36, 0.3)}
+     <polygon points="40,360 1300,60 1300,660" fill="url(#mfl-b)"/>
+     ${filmStrip(120, -6, '#14110e', ['#c8806a', '#7a9ac8', '#d8b868', '#8ac8a0', '#c88aa8'], 3)}${filmStrip(330, 5, '#14110e', ['#d8b868', '#6ac8d8', '#c8806a', '#a8c878', '#c88aa8'], 7)}${filmStrip(540, -4, '#14110e', ['#8ac8a0', '#c8806a', '#7a9ac8', '#d8b868', '#c88aa8'], 11)}
+     <circle cx="70" cy="360" r="34" fill="#fff0c8" opacity=".9"/>
+     ${bokeh('mfl', 20, 5, ['#fff0c8', '#ffffff'], 3, 10, 0.8, 80, 660)}
+     ${sFade('mfld', 470, 0.8)}`);
+  add('mem-toast',
+    'radial-gradient(ellipse 560px 440px at 640px 300px,rgba(255,196,100,.65),rgba(255,196,100,0)),linear-gradient(to bottom,#2a1008 0,#6a2a12 52%,#1a0a06 100%)',
+    `${rays('mtt', 640, 300, 18, '#ffe0a0', 0.4)}
+     ${sRings('#ffd27a', '#ffb08a', 0.6, 0.48)}
+     ${glass(560, 300, 2.2, 16, '#fff0d0')}${glass(720, 300, 2.2, -16, '#fff0d0')}
+     <g class="tw" stroke="#fff6d8" stroke-width="3" stroke-linecap="round">${Array.from({ length: 12 }, (_, i) => { const a = (i * 30) * Math.PI / 180; return `<line x1="${n0(640 + Math.cos(a) * 20)}" y1="${n0(150 + Math.sin(a) * 20)}" x2="${n0(640 + Math.cos(a) * 52)}" y2="${n0(150 + Math.sin(a) * 52)}"/>`; }).join('')}</g>
+     ${embers(70, 4, '#fff0c8', 120)}
+     ${candle(100, 680, 1.4, '#f4e6c8')}${candle(220, 690, 1.0, '#f4e6c8')}${candle(1180, 680, 1.4, '#f4e6c8')}${candle(1060, 690, 1.0, '#f4e6c8')}
+     ${bokeh('mtt', 22, 3, ['#ffd27a', '#ffb08a', '#ffffff'], 14, 56, 0.5, 40, 680)}
+     ${sFade('mttd', 520, 0.55)}`);
+
+  // ================= 21) Snowman : 눈 속의 외로운 사랑 =================
+  add('sno-night',
+    'linear-gradient(to bottom,#050a28 0,#12285a 58%,#2a4a80 100%)',
+    `${sStars(120, 16, 380, '#eaf2ff', 1.3)}
+     <circle cx="190" cy="140" r="44" fill="#f4f8ff" opacity=".9"/><circle cx="190" cy="140" r="120" fill="#aac8ff" opacity=".12"/>
+     ${sRings('#aac8ff', '#ffffff', 0.34, 0.28)}
+     ${hills('#dfe9ff', 620, 70, 3, 0.95)}${hills('#b8c8ee', 660, 50, 8, 1)}
+     ${pine(130, 640, 220, '#0a1a3a')}${pine(240, 650, 160, '#0a1a3a')}${pine(1130, 640, 240, '#0a1a3a')}${pine(1030, 650, 170, '#0a1a3a')}
+     ${snowman(430, 650, 0.9, '#f4f8ff')}
+     ${snow(60, 5, 1)}
+     ${sFade('snnd', 480, 0.7)}`);
+  add('sno-village',
+    'linear-gradient(to bottom,#0a1a3a 0,#2a3a7a 48%,#6a5a9a 100%)',
+    `${sStars(70, 17, 260, '#ffffff', 1.2)}
+     ${sRings('#ffd9a0', '#aac8ff', 0.4, 0.34)}
+     ${hills('#8a9ac8', 600, 50, 3, 0.9)}
+     ${house(60, 640, 150, 100, '#2a2250', '#3a3070', '#ffd27a')}${house(250, 650, 120, 84, '#2a2250', '#3a3070', '#ffb86a')}${house(960, 640, 160, 110, '#2a2250', '#3a3070', '#ffd27a')}${house(1140, 650, 120, 86, '#2a2250', '#3a3070', '#ffb86a')}
+     ${bulbs('snv', 80, 60, '#ffd9a0', 14)}
+     ${pine(420, 650, 200, '#12183a')}${pine(860, 650, 190, '#12183a')}
+     ${snow(70, 7, 1.2)}
+     ${bokeh('snvb', 12, 3, ['#ffd9a0', '#ffffff'], 8, 26, 0.5, 120, 620)}
+     ${sFade('snvd', 480, 0.7)}`);
+  add('sno-aurora',
+    'linear-gradient(to bottom,#030820 0,#0a2a5a 50%,#0a1a38 100%)',
+    `${sStars(150, 18, 420, '#ffffff', 1.4)}
+     ${aurora('sna', ['#66ffcc', '#a86bff', '#ff6ac8'], 60, 5)}
+     ${sRings('#66ffcc', '#ff6ac8', 0.5, 0.4)}
+     ${flake(220, 160, 64, '#cfe8ff')}${flake(880, 120, 56, '#cfe8ff')}${flake(640, 90, 50, '#ffffff')}${flake(1160, 440, 56, '#cfe8ff')}${flake(130, 470, 60, '#cfe8ff')}
+     <defs>${lin('snal', [[0, '#8ae8ff', 0.5], [1, '#0a1a38', 0.9]])}</defs><rect x="0" y="520" width="1280" height="200" fill="url(#snal)"/>
+     ${snow(110, 9, 1.4)}
+     ${sFade('snad', 480, 0.7)}`);
+
+  // ================= 22) Back & Forth : 가까워졌다 멀어지는 마음 =================
+  add('bf-swing',
+    'linear-gradient(to bottom,#2a1a5a 0,#c0608a 44%,#ff9a6a 76%,#ffd08a 100%)',
+    `${sStars(40, 21, 200, '#fff', 1.2)}
+     ${sRings('#ffe0a0', '#ffb0c8', 0.4, 0.34)}
+     <circle cx="640" cy="330" r="96" fill="#fff0c8" opacity=".92"/><circle cx="640" cy="330" r="210" fill="#ffd08a" opacity=".22"/>
+     ${hills('#5a2a60', 620, 60, 3, 0.95)}${hills('#2a1238', 670, 40, 7, 1)}
+     ${swingSet(640, 660, 330, '#0e0618')}
+     ${bokeh('bfs', 12, 4, ['#ffe0a0', '#ffb0c8'], 6, 22, 0.5, 140, 600)}
+     ${sFade('bfsd', 480, 0.8)}`);
+  add('bf-pendulum',
+    'linear-gradient(to bottom,#06242c 0,#0a4a58 52%,#041218 100%)',
+    `${sRings('#ffa04f', '#6ae8d8', 0.55, 0.45)}
+     <g stroke="#6ae8d8" stroke-opacity=".3" stroke-width="2">${Array.from({ length: 12 }, (_, i) => { const a = (i * 30) * Math.PI / 180; return `<line x1="${n0(640 + Math.cos(a) * 250)}" y1="${n0(300 + Math.sin(a) * 250)}" x2="${n0(640 + Math.cos(a) * 300)}" y2="${n0(300 + Math.sin(a) * 300)}"/>`; }).join('')}</g>
+     ${[0, 1, 2, 3].map((i) => `<circle class="pulse" style="animation-delay:${-i * 0.9}s" cx="640" cy="300" r="60" fill="none" stroke="#6ae8d8" stroke-opacity=".55" stroke-width="2"/>`).join('')}
+     ${pendulum(640, -20, 520, 46, '#ffa04f', 4.4)}${pendulum(300, -20, 380, 30, '#6ae8d8', 3.6)}${pendulum(980, -20, 380, 30, '#6ae8d8', 3.6)}
+     ${bokeh('bfp', 14, 3, ['#ffa04f', '#6ae8d8'], 8, 30, 0.4, 100, 640)}
+     ${sFade('bfpd', 480, 0.8)}`);
+  add('bf-tide',
+    'linear-gradient(to bottom,#3a1a6a 0,#e0508a 38%,#ff9a5a 64%,#ffd08a 100%)',
+    `${sRings('#ffe0a0', '#ffffff', 0.5, 0.42)}
+     <circle cx="640" cy="360" r="110" fill="#fff0c8" opacity=".95"/><circle cx="640" cy="360" r="230" fill="#ffd08a" opacity=".25"/>
+     ${tide('#c0407a', 430, 36, 7, 0.9)}${tide('#802a8a', 490, 40, 9, 0.95)}${tide('#4a1a6a', 560, 46, 11, 1)}${tide('#24103a', 630, 40, 8, 1)}
+     ${bokeh('bft', 16, 5, ['#ffffff', '#ffe0a0'], 4, 16, 0.6, 400, 680)}
+     ${sFade('bftd', 500, 0.7)}`);
 
   return S;
 })();
