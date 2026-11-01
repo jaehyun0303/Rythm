@@ -1040,5 +1040,43 @@ export const SCENES2 = (() => {
      ${bokeh('bft', 16, 5, ['#ffffff', '#ffe0a0'], 4, 16, 0.6, 400, 680)}
      ${sFade('bftd', 500, 0.7)}`);
 
+  // ---------- 7차 부품 ----------
+  const envelope = (x, y, w, h2, rot, col, seal, cls = 'drift') => `<g class="${cls}"><g transform="rotate(${rot} ${x + w / 2} ${y + h2 / 2})"><rect x="${x}" y="${y}" width="${w}" height="${h2}" rx="4" fill="${col}"/><path d="M${x} ${y} L${x + w / 2} ${y + h2 * 0.58} L${x + w} ${y}" fill="none" stroke="#00000033" stroke-width="2"/><path d="M${x} ${y + h2} L${x + w * 0.38} ${y + h2 * 0.42} M${x + w} ${y + h2} L${x + w * 0.62} ${y + h2 * 0.42}" stroke="#00000022" stroke-width="2" fill="none"/><circle cx="${x + w / 2}" cy="${y + h2 * 0.58}" r="${n0(h2 * 0.13)}" fill="${seal}"/></g></g>`;
+  const plane = (x, y, sc, rot, col, cls = 'fly') => `<g transform="translate(0 ${y})"><g class="${cls}" style="animation-duration:${n0(30 + (x % 20))}s;animation-delay:${-(x % 40)}s"><g transform="translate(${x} 0) rotate(${rot}) scale(${sc})"><polygon points="0,0 60,-10 30,12" fill="${col}"/><polygon points="0,0 60,-10 22,-2" fill="#00000026"/><polygon points="22,-2 60,-10 34,24 30,12" fill="#ffffff" opacity=".25"/></g></g></g>`;
+  const sheet = (x, y, w, h2, rot, lines) => `<g transform="rotate(${rot} ${x + w / 2} ${y + h2 / 2})"><rect x="${x}" y="${y}" width="${w}" height="${h2}" fill="#f6ecd8"/>${Array.from({ length: lines }, (_, i) => `<line x1="${x + 14}" y1="${y + 26 + i * 18}" x2="${x + w - 14 - (i === lines - 1 ? w * 0.4 : 0)}" y2="${y + 26 + i * 18}" stroke="#3a2a4a" stroke-opacity=".5" stroke-width="2"/>`).join('')}<path d="M${x + 14} ${y + 16} h${w * 0.3}" stroke="#a02a4a" stroke-width="3"/></g>`;
+
+  // ================= 23) TAEYEON To. X : 부치지 못한 편지 =================
+  add('tox-letter',
+    'linear-gradient(to bottom,#0c0a24 0,#1c1a48 54%,#14102e 100%)',
+    `<defs>${rad('txl-l', [[0, '#ffd9a0', 0.75], [1, '#ffd9a0', 0]])}</defs>
+     ${sRings('#ffb0c8', '#b8a8ff', 0.3, 0.26)}
+     ${sSkyline('#0a0a28', 6, 420, 60, 230, 1)}${bokeh('txl', 24, 4, ['#ffd9a0', '#ff9acb', '#8ab4ff'], 4, 16, 0.85, 200, 420)}
+     ${drip(5, 90)}
+     <circle cx="640" cy="560" r="330" fill="url(#txl-l)"/>
+     ${sheet(470, 480, 140, 180, -8, 6)}${sheet(640, 500, 130, 170, 10, 5)}${envelope(790, 570, 96, 64, -6, '#e8d8c0', '#a02a4a', 'sway')}
+     <path d="M1100 700 L1130 540 Q1150 470 1090 470" stroke="#0a0a28" stroke-width="10" fill="none" stroke-linecap="round"/>
+     <rect x="0" y="650" width="1280" height="70" fill="#0a0818"/>
+     ${sFade('txld', 480, 0.7)}`);
+  add('tox-mail',
+    'linear-gradient(to bottom,#3a2a7a 0,#b0608a 42%,#ff9a8a 74%,#ffd8b8 100%)',
+    `${sStars(40, 51, 220)}
+     ${sRings('#ffe0e8', '#b8a8ff', 0.5, 0.42)}
+     <circle cx="640" cy="360" r="80" fill="#fff0f0" opacity=".9"/><circle cx="640" cy="360" r="190" fill="#ffd8d8" opacity=".24"/>
+     ${cloudSea(540, '#7a4a8a', 0.85, 4, '#c88aa8')}
+     ${envelope(150, 150, 80, 54, -14, '#f6ecd8', '#c02a4a')}${envelope(790, 110, 84, 56, 12, '#f6ecd8', '#c02a4a', 'drift d2')}${envelope(330, 380, 70, 46, 8, '#e8d0e0', '#a02a6a', 'drift d3')}${envelope(900, 400, 76, 50, -10, '#f6ecd8', '#c02a4a', 'drift d2')}${envelope(560, 90, 66, 44, 6, '#e8d0e0', '#a02a6a')}
+     ${plane(100, 250, 1.1, -8, '#fff6e8')}${plane(400, 330, 0.9, -12, '#ffe0e8')}${plane(700, 200, 1.0, -6, '#fff6e8')}${plane(1000, 300, 1.2, -10, '#ffe0e8')}
+     ${fall(20, 9, ['#ffd0dc', '#ffffff'], 'petal', 0.8)}
+     ${sFade('txmd', 470, 0.82)}`);
+  add('tox-x',
+    'radial-gradient(ellipse 560px 440px at 640px 300px,rgba(255,170,190,.75),rgba(255,170,190,0)),linear-gradient(to bottom,#3a0a3a 0,#a02a5a 48%,#ff8a7a 100%)',
+    `${rays('txx', 640, 300, 22, '#ffe0d8', 0.5)}
+     ${sRings('#ffe0d8', '#ffd27a', 0.7, 0.55)}
+     <g class="tw"><path d="M540 200 L740 400 M740 200 L540 400" stroke="#ff2a5a" stroke-width="32" stroke-linecap="round" opacity=".28"/><path d="M540 200 L740 400 M740 200 L540 400" stroke="#ffe0e8" stroke-width="10" stroke-linecap="round"/></g>
+     ${envelope(180, 140, 90, 60, -16, '#f6ecd8', '#c02a4a')}${envelope(1010, 160, 90, 60, 14, '#f6ecd8', '#c02a4a', 'drift d2')}${envelope(210, 460, 80, 54, 10, '#f6ecd8', '#c02a4a', 'drift d3')}${envelope(1040, 470, 84, 56, -12, '#f6ecd8', '#c02a4a', 'drift d2')}
+     ${fall(70, 13, ['#f6ecd8', '#ffe0e8', '#ff8aa8', '#ffffff'], 'page', 1.1, 5, 6)}
+     ${fall(50, 15, ['#ff2a5a', '#ff7a9a', '#ffd27a'], 'petal', 1.2, 5, 6)}
+     ${bokeh('txx', 20, 3, ['#ffe0e8', '#ffd27a', '#ff9acb'], 12, 50, 0.5, 40, 680)}
+     ${sFade('txxd', 470, 0.75)}`);
+
   return S;
 })();

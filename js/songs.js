@@ -218,7 +218,7 @@ export const SONGS = [
     palette: ['mem-album', 'mem-film', 'mem-toast'],
     sections: [[0, 'INTRO', 0], [15, 'VERSE', 1], [30, 'VERSE II', 0], [55, 'CHORUS', 2], [85, 'BREAK', 0], [100, 'BUILD', 1], [120, 'FINAL CHORUS', 2], [165, 'OUTRO', 0]],
     audio: 'songs/memories.mp3', bpm: 91, duration: 185,
-    levels: [5, 8, 11, 16, 18], preview: 76, isNew: true,
+    levels: [5, 8, 11, 16, 18], preview: 76,
     cover: { variant: 0, a: '#ffb06a', b: '#6ac8d8' },
   },
   {
@@ -226,7 +226,7 @@ export const SONGS = [
     palette: ['sno-night', 'sno-village', 'sno-aurora'],
     sections: [[0, 'INTRO', 0], [10, 'VERSE', 1], [35, 'CHORUS', 2], [60, 'VERSE II', 1], [75, 'BREAK', 0], [85, 'BUILD', 1], [120, 'FINAL CHORUS', 2], [150, 'OUTRO', 0]],
     audio: 'songs/snowman.mp3', bpm: 70, duration: 165,
-    levels: [4, 6, 9, 12, 14], preview: 44, isNew: true,
+    levels: [4, 6, 9, 12, 14], preview: 44,
     cover: { variant: 2, a: '#aac8ff', b: '#ff6ac8' },
   },
   {
@@ -234,7 +234,15 @@ export const SONGS = [
     palette: ['bf-swing', 'bf-pendulum', 'bf-tide'],
     sections: [[0, 'INTRO', 0], [10, 'VERSE', 0], [30, 'CHORUS', 2], [45, 'VERSE II', 1], [55, 'CHORUS II', 2], [85, 'BRIDGE', 1], [95, 'BREAK', 0], [110, 'FINAL CHORUS', 2], [140, 'OUTRO', 0]],
     audio: 'songs/back-and-forth.mp3', bpm: 125, duration: 150,
-    levels: [6, 9, 13, 19, 23], preview: 57, isNew: true,
+    levels: [6, 9, 13, 19, 23], preview: 57,
     cover: { variant: 1, a: '#ffa04f', b: '#6ae8d8' },
+  },
+  {
+    id: 'to-x', title: 'TO. X', artist: 'TAEYEON',
+    palette: ['tox-letter', 'tox-mail', 'tox-x'],
+    sections: [[0, 'INTRO', 0], [5, 'VERSE', 1], [25, 'CHORUS', 2], [45, 'VERSE II', 1], [85, 'CHORUS II', 2], [105, 'BRIDGE', 1], [125, 'FINAL CHORUS', 2], [155, 'OUTRO', 0]],
+    audio: 'songs/to-x.mp3', bpm: 97, duration: 171,
+    levels: [5, 8, 11, 16, 19], preview: 90, isNew: true,
+    cover: { variant: 2, a: '#ff6a8a', b: '#b8a8ff' },
   },
 ];
