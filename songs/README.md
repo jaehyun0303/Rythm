@@ -24,6 +24,12 @@
 | Welcome to the Show (DAY6) | `welcome-to-the-show.mp3` |
 | Beethoven Virus (극악) | `beethoven-virus.mp3` |
 | 하츠네 미쿠의 소실 (극악) | `disappearance.mp3` |
+| Immortals (Fall Out Boy) | `immortals.mp3` |
+| Fate ((G)I-DLE) | `fate.mp3` |
+| My Kingdom (쿠키런: 킹덤 OST) | `my-kingdom.mp3` |
+| Supersonic (fromis_9) | `supersonic.mp3` |
+| Monster (LUM!X & Gabry Ponte) | `monster.mp3` |
+| Love Yourself (Justin Bieber) | `love-yourself.mp3` |
 
 - 파일 이름/경로는 `js/songs.js` 의 `audio` 값과 같아야 해요. mp3 / ogg / wav / m4a 모두 브라우저가 디코드할 수 있으면 돼요 (확장자만 맞춰서 `audio` 값을 수정).
 - 파일이 없으면 곡 선택 화면에 `NO AUDIO FILE · DEMO BEAT` 가 뜨고, 합성 데모 비트로 대신 재생돼요 (게임은 그대로 플레이 가능).

@@ -225,3 +225,7 @@ body.touch #touchBar{display:block}
 @keyframes flickf{from{transform:scaleY(.88) skewX(-3deg)}to{transform:scaleY(1.1) skewX(3deg)}}
 .th .gl{animation:glf 2.4s steps(1,end) infinite}
 @keyframes glf{0%,100%{opacity:.5}20%{opacity:0}40%{opacity:.7;transform:translateX(18px)}60%{opacity:.1}80%{opacity:.6;transform:translateX(-14px)}}
+
+/* 충격파 링 */
+.th .pulse{animation:pulsef 3s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulsef{0%{transform:scale(.2);opacity:.95}100%{transform:scale(5.5);opacity:0}}

@@ -107,7 +107,7 @@ js/audio.js       Web Audio 엔진, 정밀 클럭, 데모 비트 합성
 js/chart.js       채보 자동 생성 + 구간 검출 (DOM 의존 없음)
 js/themes.js      구간별 배경 전환 엔진 + 공용 테마 5종
 js/scenes.js      곡 전용 배경 장면(Blueming 등 8곡) + 장면 부품 라이브러리
-js/scenes2.js     곡 전용 배경 장면(FADED 등 10곡) + 추가 부품 (파도, 등대, 불꽃, 전투기, 풍선 ...)
+js/scenes2.js     곡 전용 배경 장면(FADED 등 나머지 곡 전부) + 추가 부품 (파도, 등대, 불꽃, 전투기, 풍선, 이빨, 레이저 ...)
 js/songs.js       곡 목록
 js/cover.js       곡별 추상 커버 SVG
 ```

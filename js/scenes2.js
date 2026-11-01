@@ -577,5 +577,300 @@ export const SCENES2 = (() => {
      ${glitch(20, 3, ['#39e6d0', '#ffffff', '#ff7ac8'], 40, 680)}
      ${sFade('cvd', 450, 0.8)}`);
 
+  // ---------- 3차 부품 ----------
+  const bridge = (deckY, towerH, col, cable) => {
+    const tx1 = 300, tx2 = 980, top = deckY - towerH;
+    const cy = (x) => (x < tx1 ? top + ((tx1 - x) / (tx1 + 40)) * (towerH - 20) : x > tx2 ? top + ((x - tx2) / (1320 - tx2)) * (towerH - 20) : (deckY - 30) - Math.pow((x - 640) / 340, 2) * (towerH - 30));
+    let pts = '', hang = '';
+    for (let x = -40; x <= 1320; x += 20) { pts += `${x},${n0(cy(x))} `; if (x % 40 === 0) hang += `<line x1="${x}" y1="${n0(cy(x))}" x2="${x}" y2="${deckY}" stroke="${cable}" stroke-width="1.4" opacity=".7"/>`; }
+    return `<rect x="-20" y="${deckY}" width="1340" height="8" fill="${col}"/>${[tx1, tx2].map((x) => `<rect x="${x - 10}" y="${top}" width="20" height="${720 - top}" fill="${col}"/><rect x="${x - 20}" y="${top + 50}" width="40" height="8" fill="${col}"/><rect x="${x - 20}" y="${top + 120}" width="40" height="8" fill="${col}"/>`).join('')}<polyline points="${pts}" fill="none" stroke="${cable}" stroke-width="3"/>${hang}`;
+  };
+  const hexPattern = (id, col, op) => `<pattern id="${id}" width="56" height="97" patternUnits="userSpaceOnUse" patternTransform="scale(1)"><path d="M28 0 L56 16 L56 48 L28 64 L0 48 L0 16Z M28 64 L28 97 M0 48 L-28 64 M56 48 L84 64" fill="none" stroke="${col}" stroke-opacity="${op}" stroke-width="1.6"/></pattern>`;
+  const microbots = (n, seed, cols, y0, y1) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const x = n0(r() * 1300), y = n0(y0 + r() * (y1 - y0)), z = 5 + r() * 9;
+      h += `<rect class="drift ${['', 'd2', 'd3'][i % 3]}" x="${x}" y="${y}" width="${z.toFixed(0)}" height="${z.toFixed(0)}" fill="${cols[i % cols.length]}" opacity="${(0.35 + r() * 0.55).toFixed(2)}" transform="rotate(${n0(r() * 90)} ${x} ${y})"/>`;
+    }
+    return h;
+  };
+  const swarm = (sid, y, amp, col, seed) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < 90; i++) { const x = -20 + i * 15, yy = y + Math.sin(i * 0.28 + seed) * amp + (r() - 0.5) * 26, z = 4 + r() * 6; h += `<rect class="tw" style="animation-delay:${(r() * 3).toFixed(1)}s" x="${x}" y="${n0(yy)}" width="${z.toFixed(0)}" height="${z.toFixed(0)}" fill="${col}" opacity="${(0.4 + r() * 0.5).toFixed(2)}" transform="rotate(${n0(r() * 90)} ${x} ${n0(yy)})"/>`; }
+    return h;
+  };
+  const fireworks = (n, seed, cols) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const cx = n0(60 + r() * 1160), cy = n0(60 + r() * 330), R = 40 + r() * 70, c = cols[i % cols.length];
+      h += `<g class="tw" style="animation-delay:${(r() * 4).toFixed(1)}s;animation-duration:${(2 + r() * 3).toFixed(1)}s" stroke="${c}" stroke-width="2.2" stroke-linecap="round">`;
+      for (let k = 0; k < 14; k++) { const a = (k * 360 / 14) * Math.PI / 180; h += `<line x1="${n0(cx + Math.cos(a) * R * 0.45)}" y1="${n0(cy + Math.sin(a) * R * 0.45)}" x2="${n0(cx + Math.cos(a) * R)}" y2="${n0(cy + Math.sin(a) * R)}"/><circle cx="${n0(cx + Math.cos(a) * R * 1.12)}" cy="${n0(cy + Math.sin(a) * R * 1.12)}" r="2" fill="${c}"/>`; }
+      h += '</g>';
+    }
+    return h;
+  };
+  const strings = (sid, n, seed, col, w = 1.8) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const x0 = n0(-60 + r() * 1400), y0 = n0(r() * 700), d = `M${x0} ${y0} C ${x0 + n0((r() - 0.5) * 500)} ${y0 + n0((r() - 0.5) * 400)}, ${x0 + n0((r() - 0.5) * 600)} ${y0 + n0((r() - 0.5) * 500)}, ${x0 + n0((r() - 0.5) * 700)} ${y0 + n0((r() - 0.5) * 600)}`;
+      h += `<path class="sway" style="animation-duration:${n0(12 + r() * 16)}s;animation-delay:${n0(-r() * 14)}s" d="${d}" fill="none" stroke="${col}" stroke-width="${(w * (0.6 + r() * 0.9)).toFixed(1)}" opacity="${(0.4 + r() * 0.5).toFixed(2)}" stroke-linecap="round"/><circle cx="${x0}" cy="${y0}" r="${(2 + r() * 3).toFixed(1)}" fill="${col}"/>`;
+    }
+    return h;
+  };
+  const tarot = (x, y, w, h2, col, sym, rot, cls = 'drift') => {
+    const cx = x + w / 2, cy = y + h2 / 2;
+    const symbols = {
+      star: `<polygon points="${cx},${cy - 34} ${cx + 10},${cy - 10} ${cx + 36},${cy - 10} ${cx + 15},${cy + 6} ${cx + 23},${cy + 32} ${cx},${cy + 16} ${cx - 23},${cy + 32} ${cx - 15},${cy + 6} ${cx - 36},${cy - 10} ${cx - 10},${cy - 10}" fill="${col}"/>`,
+      moon: `<path d="M${cx + 14} ${cy - 30} a34 34 0 1 0 0 60 a26 26 0 1 1 0 -60Z" fill="${col}"/>`,
+      sun: `<circle cx="${cx}" cy="${cy}" r="16" fill="${col}"/>${Array.from({ length: 10 }, (_, i) => { const a = (i * 36) * Math.PI / 180; return `<line x1="${n0(cx + Math.cos(a) * 24)}" y1="${n0(cy + Math.sin(a) * 24)}" x2="${n0(cx + Math.cos(a) * 38)}" y2="${n0(cy + Math.sin(a) * 38)}" stroke="${col}" stroke-width="3"/>`; }).join('')}`,
+      heart: `<path transform="translate(${cx} ${cy}) scale(2)" d="M0 14C-20 0 -10 -14 0 -5C10 -14 20 0 0 14Z" fill="${col}"/>`,
+    };
+    return `<g class="${cls}"><g transform="rotate(${rot} ${cx} ${cy})"><rect x="${x}" y="${y}" width="${w}" height="${h2}" rx="12" fill="#12041c" fill-opacity=".7" stroke="${col}" stroke-width="3"/><rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${h2 - 16}" rx="8" fill="none" stroke="${col}" stroke-opacity=".5"/>${symbols[sym]}</g></g>`;
+  };
+  const castle = (x, base, s, col, glow) => {
+    const T = (tx, th, tw) => `<rect x="${tx - tw / 2}" y="${base - th}" width="${tw}" height="${th}" fill="${col}"/><polygon points="${tx - tw / 2 - 6},${base - th} ${tx + tw / 2 + 6},${base - th} ${tx},${base - th - tw * 1.1}" fill="${col}"/><rect x="${tx - 3}" y="${base - th + 18}" width="6" height="12" fill="${glow}" opacity=".9"/>`;
+    return `<g transform="translate(${x} 0) scale(${s}) translate(${-x} ${base * (1 - s) / s})">${T(x, 150, 46)}${T(x - 90, 110, 40)}${T(x + 90, 110, 40)}${T(x - 150, 70, 34)}${T(x + 150, 70, 34)}<rect x="${x - 110}" y="${base - 70}" width="220" height="70" fill="${col}"/><path d="M${x - 24} ${base} V${base - 36} a24 24 0 0 1 48 0 V${base}Z" fill="${glow}" opacity=".85"/><line x1="${x}" y1="${base - 150 - 50}" x2="${x}" y2="${base - 150 - 84}" stroke="${col}" stroke-width="3"/><polygon points="${x},${base - 150 - 84} ${x + 28},${base - 150 - 74} ${x},${base - 150 - 64}" fill="#ff4f6a"/></g>`;
+  };
+  const crown = (cx, cy, s, col, gem) => `<g transform="translate(${cx} ${cy}) scale(${s})"><path d="M-60 40 L-60 -10 L-35 15 L0 -35 L35 15 L60 -10 L60 40Z" fill="${col}"/><rect x="-60" y="30" width="120" height="14" fill="${col}"/><circle cx="-60" cy="-14" r="8" fill="${gem}"/><circle cx="0" cy="-40" r="9" fill="${gem}"/><circle cx="60" cy="-14" r="8" fill="${gem}"/><circle cx="-24" cy="30" r="6" fill="${gem}"/><circle cx="24" cy="30" r="6" fill="${gem}"/></g>`;
+  const pennants = (y, sag, cols) => {
+    let h = `<path d="M-10 ${y} Q640 ${y + sag} 1290 ${y}" fill="none" stroke="#3a2418" stroke-width="2.4"/>`;
+    for (let i = 0; i < 22; i++) { const t = i / 21, x = -10 + t * 1300, yy = y + 2 * (1 - t) * t * sag; h += `<polygon points="${n0(x)},${n0(yy)} ${n0(x + 26)},${n0(yy)} ${n0(x + 13)},${n0(yy + 34)}" fill="${cols[i % cols.length]}" opacity=".92"/>`; }
+    return h;
+  };
+  const rainbow = (cx, cy, r0) => ['#ff4f6a', '#ffa14f', '#ffe14f', '#7aff7a', '#4fc8ff', '#a88bff'].map((c, i) => `<path d="M${cx - r0 + i * 14} ${cy} A${r0 - i * 14} ${r0 - i * 14} 0 0 1 ${cx + r0 - i * 14} ${cy}" fill="none" stroke="${c}" stroke-width="14" opacity=".62"/>`).join('');
+  const shockRings = (cx, cy, cols, n) => {
+    let h = '';
+    for (let i = 0; i < n; i++) h += `<circle class="pulse" style="animation-delay:${(-i * 3 / n).toFixed(2)}s" cx="${cx}" cy="${cy}" r="90" fill="none" stroke="${cols[i % cols.length]}" stroke-width="${5 - (i % 3)}"/>`;
+    return h;
+  };
+  const chevrons = (n, seed, col, y0, y1) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) { const x = n0(r() * 1300), y = n0(y0 + r() * (y1 - y0)), sc = 0.7 + r() * 1.1; h += `<polyline class="sp" style="animation-duration:${(0.8 + r() * 1.4).toFixed(2)}s;animation-delay:${(-r() * 2).toFixed(2)}s" points="${x + 24 * sc},${y} ${x},${y + 16 * sc} ${x + 24 * sc},${y + 32 * sc}" fill="none" stroke="${col}" stroke-width="${(3 * sc).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" opacity="${(0.4 + r() * 0.5).toFixed(2)}"/>`; }
+    return h;
+  };
+
+  // ================= 13) Immortals : 부서져도 불사신처럼 일어서는 영웅 =================
+  add('imm-dusk',
+    'linear-gradient(to bottom,#14134e 0,#3a3a9a 40%,#d96a7a 74%,#ffb36a 100%)',
+    `${sStars(40, 12, 200)}
+     ${rings('#ffd2a0', '#8aa8ff', 0.4, 0.34)}
+     <circle cx="640" cy="440" r="90" fill="#ffe2b0" opacity=".9"/><circle cx="640" cy="440" r="200" fill="#ffb36a" opacity=".22"/>
+     ${sSkyline('#26225e', 4, 520, 60, 200, 0.95)}
+     ${bridge(520, 230, '#120f3a', '#2a2570')}
+     ${bokeh('imd', 14, 3, ['#ffd2a0', '#ff8aa0'], 10, 40, 0.5, 100, 600)}
+     ${sFade('imdd', 440)}`);
+  add('imm-armor',
+    'radial-gradient(ellipse 560px 400px at 640px 300px,rgba(60,140,255,.4),rgba(60,140,255,0)),linear-gradient(to bottom,#050a24 0,#0c1a52 56%,#050818 100%)',
+    `<defs>${hexPattern('imh', '#4aa8ff', 0.5)}</defs>
+     <rect width="1280" height="720" fill="url(#imh)" opacity=".55"/>
+     ${rings('#4aa8ff', '#ff8a3a', 0.5, 0.4)}
+     ${swarm('ima', 200, 50, '#4aa8ff', 3)}${swarm('imb', 420, 70, '#ff8a3a', 7)}${swarm('imc', 580, 40, '#8ac8ff', 11)}
+     ${microbots(50, 4, ['#4aa8ff', '#ffffff', '#ff8a3a'], 60, 680)}
+     ${glitch(8, 2, ['#4aa8ff'], 80, 640)}
+     ${sFade('ima', 460, 0.8)}`);
+  add('imm-rise',
+    'radial-gradient(ellipse 560px 440px at 640px 300px,rgba(255,170,60,.65),rgba(255,170,60,0)),linear-gradient(to bottom,#2a0a3a 0,#7a1a4a 46%,#ff7a3a 100%)',
+    `${rays('imr', 640, 300, 20, '#ffd27a', 0.5)}
+     ${rings('#ffd27a', '#4aa8ff', 0.65, 0.5)}
+     <polygon points="640,150 730,200 730,300 640,350 550,300 550,200" fill="none" stroke="#ffd27a" stroke-width="5" opacity=".85"/><polygon points="640,185 700,220 700,285 640,320 580,285 580,220" fill="#ffd27a" opacity=".35"/>
+     ${fireworks(7, 5, ['#ffd27a', '#4aa8ff', '#ff6a8a', '#ffffff'])}
+     ${sSkyline('#1a0a2a', 8, 680, 40, 160, 0.95)}
+     ${embers(60, 3, '#ffc070', 220)}
+     ${sFade('imrd', 460, 0.7)}`);
+
+  // ================= 14) (G)I-DLE Fate : 붉은 실로 이어진 운명 =================
+  add('fat-thread',
+    'linear-gradient(to bottom,#0a0620 0,#1a0f40 56%,#0a0618 100%)',
+    `${sStars(90, 77, 360, '#e8d8ff', 1.2)}
+     <path d="M190 120 a42 42 0 1 0 42 58 a34 34 0 1 1 -42 -58Z" fill="#f4e6ff" opacity=".9"/>
+     ${rings('#ff3a5a', '#c9a8ff', 0.4, 0.3)}
+     ${strings('ft', 16, 5, '#ff3a5a', 2.2)}
+     ${bokeh('ftb', 12, 3, ['#ff3a5a', '#c9a8ff'], 8, 30, 0.4, 100, 640)}
+     ${sFade('ftd', 450)}`);
+  add('fat-tarot',
+    'radial-gradient(ellipse 600px 420px at 640px 300px,rgba(200,60,160,.4),rgba(200,60,160,0)),linear-gradient(to bottom,#12041e 0,#2a0a46 54%,#0c0414 100%)',
+    `${rings('#ffd27a', '#ff5ac8', 0.5, 0.4)}
+     ${fog('ftt', 8, 4, '#a860d8', 260, 700, 0.34)}
+     ${tarot(150, 110, 120, 190, '#ffd27a', 'moon', -10)}${tarot(1010, 120, 120, 190, '#ffd27a', 'sun', 9, 'drift d2')}${tarot(560, 40, 110, 170, '#ff5ac8', 'star', 3, 'drift d3')}${tarot(330, 480, 100, 160, '#ff5ac8', 'heart', 12, 'drift d2')}${tarot(850, 470, 100, 160, '#ffd27a', 'star', -8)}
+     ${strings('ftt', 8, 8, '#ff3a5a', 1.8)}
+     ${sStars(50, 41, 400, '#ffe8c8', 1.2)}
+     ${sFade('fttd', 450)}`);
+  add('fat-crimson',
+    'radial-gradient(ellipse 560px 440px at 640px 300px,rgba(255,40,60,.7),rgba(255,40,60,0)),linear-gradient(to bottom,#1a0208 0,#5a0816 50%,#12040a 100%)',
+    `${rays('fcr', 640, 300, 26, '#ff4a5a', 0.4)}
+     ${rings('#ff3a5a', '#ffd27a', 0.7, 0.55)}
+     <circle cx="640" cy="300" r="130" fill="#ff3a5a" opacity=".9"/><circle cx="640" cy="300" r="260" fill="#ff3a5a" opacity=".2"/>
+     <g class="spin" style="transform-origin:640px 300px;transform-box:view-box">${Array.from({ length: 24 }, (_, i) => { const a = (i * 15) * Math.PI / 180; return `<line x1="${n0(640 + Math.cos(a) * 130)}" y1="${n0(300 + Math.sin(a) * 130)}" x2="${n0(640 + Math.cos(a) * 900)}" y2="${n0(300 + Math.sin(a) * 900)}" stroke="#ffd27a" stroke-opacity=".28" stroke-width="1.4"/>`; }).join('')}</g>
+     ${strings('fcs', 14, 12, '#ffd27a', 2)}
+     ${fall(50, 14, ['#ff2a4a', '#ff7a8a', '#ffd27a'], 'petal', 1.3, 6, 7)}
+     ${sFade('fcrd', 450)}`);
+
+  // ================= 15) My Kingdom : 달콤하고 웅장한 쿠키 왕국 =================
+  add('mk-meadow',
+    'linear-gradient(to bottom,#6a8aff 0,#b8a8ff 40%,#ffc8d8 76%,#ffe8c8 100%)',
+    `${rings('#ffffff', '#ffe0a0', 0.5, 0.42)}
+     ${sCloud(190, 150, 1.2, 0.7)}${sCloud(1090, 190, 1.3, 0.7, 'drift d2')}${sCloud(640, 360, 1.7, 0.5, 'drift d3')}
+     ${hills('#8ad8a0', 560, 90, 3, 0.95)}
+     ${castle(640, 470, 0.55, '#b88adf', '#fff0a0')}
+     ${hills('#5cb878', 620, 70, 8, 1)}${hills('#3a9858', 680, 50, 5, 1)}
+     ${bokeh('mkm', 16, 4, ['#ffffff', '#fff0a0', '#ffc8e0'], 6, 22, 0.6, 140, 620)}
+     ${fall(14, 6, ['#ffc8e0', '#ffffff'], 'petal', 0.8)}
+     ${sFade('mkmd', 460, 0.85)}`);
+  add('mk-castle',
+    'linear-gradient(to bottom,#4a3a9a 0,#e0709a 40%,#ffa860 72%,#ffe08a 100%)',
+    `${rays('mkc', 640, 320, 14, '#fff0b0', 0.4, 1400, 0.2)}
+     ${rings('#fff0b0', '#ffd0e8', 0.55, 0.45)}
+     <circle cx="640" cy="320" r="100" fill="#fff6d0" opacity=".92"/>
+     ${castle(640, 560, 1.15, '#4a2a6a', '#ffe08a')}${castle(220, 600, 0.6, '#5a3a78', '#ffe08a')}${castle(1070, 600, 0.6, '#5a3a78', '#ffe08a')}
+     ${pennants(60, 56, ['#ff4f6a', '#ffd04f', '#4fc8ff', '#a88bff', '#7aff7a'])}
+     ${hills('#8a4a3a', 640, 60, 3, 1)}
+     ${bokeh('mkc', 14, 5, ['#fff0b0', '#ffc8a0'], 8, 28, 0.6, 100, 600)}
+     ${sFade('mkcd', 470, 0.8)}`);
+  add('mk-royal',
+    'radial-gradient(ellipse 600px 440px at 640px 260px,rgba(255,236,150,.8),rgba(255,236,150,0)),linear-gradient(to bottom,#5a2a9a 0,#c04aa8 48%,#ff9a6a 100%)',
+    `${rays('mkr', 640, 260, 24, '#fff0a0', 0.55)}
+     ${rainbow(640, 600, 520)}
+     ${rings('#fff0a0', '#ffffff', 0.75, 0.6)}
+     ${crown(640, 250, 2.2, '#ffd04f', '#ff4f6a')}
+     ${fireworks(6, 9, ['#ffd04f', '#ff4f9a', '#4fc8ff', '#ffffff'])}
+     ${pennants(40, 40, ['#ff4f6a', '#ffd04f', '#4fc8ff', '#a88bff'])}
+     ${fall(80, 21, ['#ffd04f', '#ff4f9a', '#4fc8ff', '#7aff7a', '#ffffff'], 'rect', 1.5, 4, 5)}
+     ${sFade('mkrd', 470, 0.78)}`);
+
+  // ================= 16) Supersonic : 소리보다 빠르게 =================
+  add('sup-dawn',
+    'linear-gradient(to bottom,#2a1a7a 0,#7a5ad8 36%,#ff8ac8 70%,#ffd8e8 100%)',
+    `${sStars(60, 13, 260, '#fff', 1.3)}
+     ${rings('#ffffff', '#8ae8ff', 0.5, 0.42)}
+     <circle cx="640" cy="440" r="70" fill="#fff8f0" opacity=".95"/><circle cx="640" cy="440" r="170" fill="#ffd8e8" opacity=".3"/>
+     <g stroke="#ffffff" stroke-opacity=".25">${[0, 1, 2, 3, 4, 5].map((i) => `<line x1="0" y1="${450 + i * 38}" x2="1280" y2="${450 + i * 38}" stroke-width="${1 + i * 0.6}"/>`).join('')}</g>
+     ${speed('sud', 16, 4, '#ffffff', 80, 640)}
+     ${bokeh('sudb', 14, 6, ['#ffffff', '#8ae8ff', '#ffc8e8'], 8, 30, 0.5, 100, 640)}
+     ${sFade('sudd', 450, 0.85)}`);
+  add('sup-sonic',
+    'radial-gradient(ellipse 560px 420px at 640px 300px,rgba(80,200,255,.5),rgba(80,200,255,0)),linear-gradient(to bottom,#06123a 0,#0e2e7a 56%,#050a24 100%)',
+    `${shockRings(640, 300, ['#8ae8ff', '#ff8ac8', '#ffffff'], 6)}
+     ${rings('#8ae8ff', '#ff8ac8', 0.5, 0.4)}
+     ${chevrons(26, 3, '#8ae8ff', 60, 640)}${chevrons(14, 8, '#ff8ac8', 60, 640)}
+     <circle cx="640" cy="300" r="50" fill="#ffffff" opacity=".9"/>
+     ${speed('sus', 14, 5, '#cdf4ff', 60, 640)}
+     ${sStars(50, 21, 400, '#cdf4ff', 1.2)}
+     ${sFade('susd', 460, 0.8)}`);
+  add('sup-burst',
+    'radial-gradient(ellipse 620px 460px at 640px 300px,rgba(255,255,255,.9),rgba(255,140,200,.4) 40%,rgba(255,140,200,0) 70%),linear-gradient(to bottom,#3a1a8a 0,#d04ab8 50%,#4ad8ff 100%)',
+    `${rays('sub', 640, 300, 28, '#ffffff', 0.6)}
+     <polygon points="640,300 1400,60 1400,540" fill="#ffffff" opacity=".12"/><polygon points="640,300 -120,60 -120,540" fill="#ffffff" opacity=".12"/>
+     ${shockRings(640, 300, ['#ffffff', '#ffe0f4', '#c8f4ff'], 5)}
+     ${rings('#ffffff', '#ffe0f4', 0.8, 0.65)}
+     <circle cx="640" cy="300" r="90" fill="#ffffff"/>
+     ${chevrons(20, 4, '#ffffff', 60, 640)}${speed('subs', 20, 7, '#ffffff', 40, 680)}
+     ${fall(80, 25, ['#ff8ac8', '#8ae8ff', '#ffffff', '#fff0a0', '#a8ffd0'], 'rect', 1.5, 3, 4)}
+     ${bokeh('subb', 16, 3, ['#ffffff', '#ffc8e8'], 12, 50, 0.5, 40, 680)}
+     ${sFade('subd', 470, 0.7)}`);
+
+  // ---------- 4차 부품 ----------
+  const eyes = (n, seed, col, y0, y1) => {
+    const r = mulberry32(seed);
+    let h = `<defs>${rad('eyg' + seed, [[0, col, 0.7], [1, col, 0]])}</defs>`;
+    for (let i = 0; i < n; i++) {
+      const x = n0(40 + r() * 1200), y = n0(y0 + r() * (y1 - y0)), sc = 0.7 + r() * 1.1, gap = 20 * sc;
+      h += `<g class="tw" style="animation-duration:${(3 + r() * 5).toFixed(1)}s;animation-delay:${(-r() * 6).toFixed(1)}s"><circle cx="${x}" cy="${y}" r="${n0(30 * sc)}" fill="url(#eyg${seed})"/>` +
+        [-1, 1].map((d) => `<ellipse cx="${n0(x + d * gap)}" cy="${y}" rx="${n0(9 * sc)}" ry="${n0(5 * sc)}" fill="${col}"/><rect x="${n0(x + d * gap - 1.2)}" y="${n0(y - 5 * sc)}" width="2.4" height="${n0(10 * sc)}" fill="#05030a"/>`).join('') + '</g>';
+    }
+    return h;
+  };
+  const teeth = (y, down, col, glow, n = 14) => {
+    const x0 = 340, w = 600 / n;
+    let h = '';
+    for (let i = 0; i < n; i++) { const x = x0 + i * w, hh = 70 + ((i * 37) % 5) * 14; h += down ? `<polygon points="${n0(x)},${y} ${n0(x + w)},${y} ${n0(x + w / 2)},${y + hh}" fill="${col}"/>` : `<polygon points="${n0(x)},${y} ${n0(x + w)},${y} ${n0(x + w / 2)},${y - hh}" fill="${col}"/>`; }
+    return h;
+  };
+  const claw = (x, y, len, col) => [0, 1, 2].map((i) => `<polygon points="${x + i * 54},${y} ${x + i * 54 + 16},${y} ${x + i * 54 + len * 0.5 + 5},${y + len} ${x + i * 54 + len * 0.5},${y + len}" fill="${col}" opacity=".88"/><polygon points="${x + i * 54 - 6},${y - 6} ${x + i * 54 + 22},${y - 6} ${x + i * 54 + len * 0.5 + 12},${y + len + 6} ${x + i * 54 + len * 0.5 - 7},${y + len + 6}" fill="${col}" opacity=".18"/>`).join('');
+  const lasers = (sid, list) => list.map(([ox, oy, tx, ty, col, dur, del], i) => `<line class="swing" style="transform-origin:${ox}px ${oy}px;transform-box:view-box;animation-duration:${dur}s;animation-delay:${del}s" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${col}" stroke-width="3.2" stroke-linecap="round" opacity=".85"/><line class="swing" style="transform-origin:${ox}px ${oy}px;transform-box:view-box;animation-duration:${dur}s;animation-delay:${del}s" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${col}" stroke-width="12" stroke-linecap="round" opacity=".16"/>`).join('');
+  const eq = (n, seed, col, base, maxH) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) { const hh = n0(30 + r() * maxH), w = 1280 / n - 6; h += `<rect class="flick" style="animation-duration:${(0.4 + r() * 0.9).toFixed(2)}s;animation-delay:${(-r()).toFixed(2)}s" x="${n0(i * (1280 / n) + 3)}" y="${base - hh}" width="${n0(w)}" height="${hh}" fill="${col}" opacity=".26"/>`; }
+    return h;
+  };
+  const guitar = (x, y, s, rot, col) => `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" fill="${col}"><circle cx="0" cy="0" r="64"/><circle cx="0" cy="-92" r="48"/><rect x="-60" y="-130" width="120" height="70"/><rect x="-9" y="-440" width="18" height="320"/><rect x="-16" y="-480" width="32" height="48" rx="6"/><circle cx="0" cy="-34" r="24" fill="#05030c" opacity=".75"/></g>`;
+  const mirrorFrame = (sid, cx, cy, rx, ry, col) => `<defs>${lin(sid + 'mg', [[0, '#ffffff', 0.18], [1, '#ffffff', 0.02]])}</defs><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#${sid}mg)" stroke="${col}" stroke-width="12"/><ellipse cx="${cx}" cy="${cy}" rx="${rx - 14}" ry="${ry - 14}" fill="none" stroke="${col}" stroke-opacity=".5" stroke-width="2"/><path d="M${cx - rx * 0.6} ${cy - ry * 0.55} Q${cx - rx * 0.3} ${cy - ry * 0.85} ${cx + rx * 0.1} ${cy - ry * 0.92}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="5" stroke-linecap="round"/>`;
+  const risingHearts = (n, seed, cols) => {
+    const r = mulberry32(seed);
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const x = n0(r() * 1280), y0 = n0(60 + r() * 640), sc = 0.7 + r() * 1.3, dx = n0((r() - 0.5) * 120), c = cols[i % cols.length];
+      h += `<g transform="translate(${x} ${y0})"><g class="up" style="--y0:${y0}px;--dx:${dx}px;animation-duration:${n0(14 + r() * 16)}s;animation-delay:${n0(-r() * 30)}s"><path transform="scale(${sc.toFixed(2)})" d="M0 18C-26 0 -12 -18 0 -6C12 -18 26 0 0 18Z" fill="${c}" opacity=".85"/></g></g>`;
+    }
+    return h;
+  };
+
+  // ================= 17) Monster : 내 안의 괴물 =================
+  add('mon-lair',
+    'linear-gradient(to bottom,#03060a 0,#0a1a14 56%,#04080a 100%)',
+    `${sStars(50, 12, 260, '#bfffd8', 1)}
+     <circle cx="900" cy="150" r="46" fill="#d8ffe8" opacity=".6"/><circle cx="900" cy="150" r="120" fill="#4aff9a" opacity=".1"/>
+     ${rings('#4aff9a', '#a86bff', 0.3, 0.26)}
+     ${trees(5, '#020504', 700, 11)}
+     ${fog('mnl', 10, 4, '#4aff9a', 340, 700, 0.3)}
+     ${eyes(9, 3, '#7aff4a', 360, 660)}${eyes(3, 8, '#ff3a5a', 200, 360)}
+     <rect x="0" y="660" width="1280" height="60" fill="#020504"/>
+     ${sFade('mnld', 460)}`);
+  add('mon-jaw',
+    'radial-gradient(ellipse 600px 380px at 640px 360px,rgba(120,255,80,.5),rgba(120,255,80,0)),linear-gradient(to bottom,#0a0418 0,#2a0a4a 50%,#06020e 100%)',
+    `${rings('#7aff4a', '#c06bff', 0.5, 0.4)}
+     <rect x="340" y="130" width="600" height="470" fill="#1a3a10" opacity=".45"/>
+     ${teeth(130, true, '#eaffd8', '#7aff4a')}${teeth(600, false, '#eaffd8', '#7aff4a')}
+     <rect x="330" y="118" width="620" height="14" fill="#2a0a4a"/><rect x="330" y="598" width="620" height="14" fill="#2a0a4a"/>
+     ${claw(110, 200, 280, '#c06bff')}${claw(990, 240, 260, '#7aff4a')}
+     ${eyes(3, 5, '#7aff4a', 260, 420)}
+     ${glitch(10, 3, ['#7aff4a', '#c06bff'], 100, 600)}
+     ${sFade('mnjd', 480, 0.6)}`);
+  add('mon-rave',
+    'radial-gradient(ellipse 600px 420px at 640px 300px,rgba(150,255,60,.55),rgba(150,255,60,0)),linear-gradient(to bottom,#12042e 0,#4a0a7a 48%,#08020e 100%)',
+    `${rays('mnr', 640, 300, 22, '#a8ff4a', 0.45)}
+     ${rings('#a8ff4a', '#ff4aff', 0.7, 0.55)}
+     ${lasers('mnr', [[160, 720, 640, 0, '#a8ff4a', 3.4, 0], [1120, 720, 640, 0, '#ff4aff', 3.8, -1], [420, 720, 900, 0, '#4affff', 4.2, -2], [860, 720, 380, 0, '#a8ff4a', 3.6, -1.5]])}
+     <circle cx="640" cy="300" r="90" fill="#eaffd8" opacity=".9"/>${eyes(2, 9, '#05030a', 270, 330)}
+     ${eq(40, 4, '#a8ff4a', 720, 150)}
+     ${fall(50, 11, ['#a8ff4a', '#ff4aff', '#4affff', '#ffffff'], 'rect', 1.3, 3, 4)}
+     ${sFade('mnrd', 560, 0.4)}`);
+
+  // ================= 18) Love Yourself : 담담하게 건네는 이별 인사 =================
+  add('lov-roof',
+    'linear-gradient(to bottom,#3a2a6a 0,#c0608a 42%,#ff9a6a 74%,#ffd08a 100%)',
+    `${rings('#ffe0a0', '#ffb0c8', 0.4, 0.34)}
+     <circle cx="640" cy="380" r="84" fill="#fff0c8" opacity=".92"/><circle cx="640" cy="380" r="190" fill="#ffd08a" opacity=".25"/>
+     ${sSkyline('#3a2050', 6, 560, 60, 210, 0.95)}${sSkyline('#1e0f30', 9, 640, 40, 140, 1)}
+     ${guitar(240, 700, 0.6, -18, '#0e0618')}
+     ${bulbs('lvr', 110, 70, '#ffd9a0', 12)}
+     ${bokeh('lvrb', 14, 4, ['#ffe0a0', '#ffb0c8'], 8, 30, 0.5, 120, 620)}
+     ${sFade('lvrd', 470)}`);
+  add('lov-mirror',
+    'linear-gradient(to bottom,#0a1038 0,#202a7a 46%,#10183e 100%)',
+    `${sStars(110, 44, 330, '#e8f0ff')}
+     ${rings('#b8c8ff', '#ffd9a0', 0.4, 0.32)}
+     <circle cx="640" cy="250" r="64" fill="#fff4d8" opacity=".92"/>
+     <rect x="0" y="380" width="1280" height="340" fill="#0a1030"/>
+     <g transform="translate(0 760) scale(1 -1)" opacity=".3"><circle cx="640" cy="250" r="64" fill="#fff4d8"/>${sStars(60, 44, 330, '#e8f0ff')}</g>
+     ${[0, 1, 2, 3, 4].map((i) => `<ellipse class="sway" style="animation-duration:${9 + i * 3}s" cx="640" cy="${430 + i * 50}" rx="${160 + i * 70}" ry="${8 + i * 3}" fill="none" stroke="#b8c8ff" stroke-opacity="${0.4 - i * 0.06}" stroke-width="2"/>`).join('')}
+     ${mirrorFrame('lmf', 640, 300, 260, 190, '#d8b25a')}
+     ${bokeh('lmb', 14, 6, ['#b8c8ff', '#ffd9a0'], 8, 30, 0.4, 100, 620)}
+     ${sFade('lmd', 470)}`);
+  add('lov-heart',
+    'radial-gradient(ellipse 560px 440px at 640px 300px,rgba(255,170,200,.7),rgba(255,170,200,0)),linear-gradient(to bottom,#5a1a7a 0,#c04a8a 46%,#ff9a8a 100%)',
+    `${rays('lvh', 640, 300, 20, '#ffe0e8', 0.5)}
+     ${rings('#ffe0e8', '#ffd9a0', 0.7, 0.55)}
+     <path transform="translate(640 300) scale(7)" d="M0 18C-26 0 -12 -18 0 -6C12 -18 26 0 0 18Z" fill="none" stroke="#ffe0e8" stroke-width="1.6" opacity=".85"/><path transform="translate(640 300) scale(5.4)" d="M0 18C-26 0 -12 -18 0 -6C12 -18 26 0 0 18Z" fill="#ff6a9a" opacity=".5"/>
+     ${risingHearts(40, 7, ['#ffe0e8', '#ff6a9a', '#ffd9a0', '#ffffff'])}
+     ${bokeh('lvhb', 22, 3, ['#ffe0e8', '#ffd9a0', '#ff9ac4'], 12, 54, 0.5, 40, 680)}
+     ${fall(30, 9, ['#ffffff', '#ffe0e8'], 'petal', 0.9)}
+     ${sFade('lvhd', 470, 0.78)}`);
+
   return S;
 })();
