@@ -154,5 +154,5 @@ function drawHist(r) {
   const avg = n ? r.devs.reduce((a, b) => a + b, 0) / n : 0;
   const sd = n ? Math.sqrt(r.devs.reduce((a, b) => a + (b - avg) ** 2, 0) / n) : 0;
   const m = Math.round(avg);
-  $('#rStats').innerHTML = `<span>AVG ${m < 0 ? '−' : '+'}${Math.abs(m)} ms</span><span>σ ${Math.round(sd)} ms</span>`;
+  $('#rStats').innerHTML = `<span>AVG ${m < 0 ? '−' : '+'}${Math.abs(m)} ms</span><span>σ ${Math.round(sd)} ms</span>` + (r.bombs ? `<span style="color:#ff9a3a">BOMB ${r.bombs}</span>` : '');
 }

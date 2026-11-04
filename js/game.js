@@ -18,6 +18,7 @@ const OD_DUR = 9;
 const OD_MULT = 1.5;
 const LEAD_IN = 3;
 const SPEC_N = 28;
+const BOMB_PEN = 500;     // 폭탄 감점
 const MOTION_BUDGET = [0, 40, 80, Infinity]; // 장면당 움직이는 요소 수 상한 (단계 0~3)
 const PERF_IDS = ['hScore', 'hAcc', 'hRank', 'cP', 'cG', 'cO', 'cM', 'combo', 'comboLbl', 'syncBar', 'syncPct', 'odRing', 'odPct', 'odNote', 'tCur', 'progFill', 'progMark', 'secName', 'judgeText', 'judgeSub', 'gYou', 'gDelta', 'gGhost', 'gNote', 'gYouBar', 'gGhostBar', 'devTicks', 'devAvg', 'notes', 'odGlow', 'screen-play', 'themes'];
 
@@ -117,28 +118,51 @@ export class Game {
   }
 
   // ---------- 터치/마우스 입력: 화면 어디를 눌러도 x 좌표로 레인 판정, 멀티터치 지원 ----------
-  laneAt(clientX) {
-    const r = $('#stage').getBoundingClientRect();
-    const x = ((clientX - r.left) / r.width) * 1280;
+  stageX(clientX) {
+    const r = this._rect || (this._rect = $('#stage').getBoundingClientRect());
+    return ((clientX - r.left) / r.width) * 1280;
+  }
+  laneAtX(x) {
     if (x < 400 || x > 880) return -1;
     return clamp(Math.floor((x - 430) / LANE_W), 0, 3);
   }
   bindPointers() {
     const scr = $('#screen-play');
     this.ptr = new Map();
+    addEventListener('resize', () => { this._rect = null; });
+    addEventListener('orientationchange', () => { this._rect = null; });
     scr.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button,.ov,#odPanel')) return;
-      const lane = this.laneAt(e.clientX);
+      const x = this.stageX(e.clientX), lane = this.laneAtX(x);
       if (lane < 0) return;
       e.preventDefault();
-      this.ptr.set(e.pointerId, lane);
-      this.press(lane, e.timeStamp);
+      this.ptr.set(e.pointerId, { lane, cur: lane, x0: x, t0: this.now(e.timeStamp), flicked: false, slide: null });
+      this.press(lane, e.timeStamp, e.pointerId);
+    });
+    scr.addEventListener('pointermove', (e) => {
+      const st = this.ptr.get(e.pointerId);
+      if (!st) return;
+      const x = this.stageX(e.clientX), l = this.laneAtX(x);
+      if (l >= 0) st.cur = l;
+      // FLICK: 누른 지점에서 가로로 빠르게 쓸면 방향 판정
+      if (!st.flicked && Math.abs(x - st.x0) >= 26) {
+        st.flicked = true;
+        if (this.state === 'play' && !this.auto) this.tryFlick(x > st.x0 ? 1 : -1, st.t0, st.lane);
+      }
+      // SLIDE: 리본 경로(시작~끝 레인 사이)를 벗어나면 끝 노드는 MISS
+      const sl = st.slide;
+      if (sl && sl.endNode.s === 0 && !sl.broken && l >= 0) {
+        const lo = Math.min(sl.lane, sl.lane2), hi = Math.max(sl.lane, sl.lane2);
+        if (l < lo || l > hi) sl.broken = true;
+      }
     });
     const up = (e) => {
-      const l = this.ptr.get(e.pointerId);
-      if (l === undefined) return;
+      const st = this.ptr.get(e.pointerId);
+      if (!st) return;
       this.ptr.delete(e.pointerId);
-      this.release(l, e.timeStamp);
+      const sl = st.slide;
+      if (sl && sl.endNode.s === 0 && this.now(e.timeStamp) < sl.t2 - WIN.good) sl.broken = true;   // 끝 노드 전에 손을 뗌
+      this.release(st.lane, e.timeStamp);
     };
     scr.addEventListener('pointerup', up);
     scr.addEventListener('pointercancel', up);
@@ -160,11 +184,25 @@ export class Game {
     this.userOffset = (st.offset || 0) / 1000;
     this.hitsound = st.hitsound;
     this.duration = entry.duration;
-    this.notes = chart.notes.map((n) => ({ ...n, s: 0, el: null, j: null }));
-    this.total = this.notes.length;
-    this.lastEnd = this.notes.reduce((m, n) => Math.max(m, n.end || n.t), 0);
+    this.notes = chart.notes.map((n) => ({
+      ...n, s: 0, el: null, j: null,
+      kind: n.type === 'flick' ? 'flick' : n.type === 'bomb' ? 'bomb' : n.type === 'slide' ? 'slide' : n.len > 0 ? 'ln' : 'tap',
+    }));
+    this.total = chart.total;   // 판정 대상 수 (슬라이드는 2, 폭탄 제외)
+    this.notes.forEach((n) => { n.fin = n.kind === 'slide' ? n.t2 : n.end || n.t; });
+    this.lastEnd = this.notes.reduce((m, n) => Math.max(m, n.fin), 0);
     this.lanes = [[], [], [], []];
-    this.notes.forEach((n) => this.lanes[n.lane].push(n));
+    this.flicks = []; this.bombs = []; this.ends = [];
+    this.notes.forEach((n) => {
+      if (n.kind === 'flick') this.flicks.push(n);
+      else if (n.kind === 'bomb') this.bombs.push(n);
+      else {
+        this.lanes[n.lane].push(n);
+        if (n.kind === 'slide') { n.endNode = { kind: 'send', parent: n, t: n.t2, lane: n.lane2, s: 0 }; this.ends.push(n.endNode); }
+      }
+    });
+    this.ends.sort((a, b) => a.t - b.t);
+    this.fpos = 0; this.bpos = 0; this.epos = 0; this.bombHits = 0; this._rect = null;
     this.qpos = [0, 0, 0, 0];
     this.down = [false, false, false, false];
     this.ptr && this.ptr.clear();
@@ -253,6 +291,10 @@ export class Game {
       this.press(KEYS[e.code], e.timeStamp);
       return true;
     }
+    if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      if (!e.repeat && this.state === 'play' && !this.auto) this.tryFlick(e.code === 'ArrowLeft' ? -1 : 1, this.now(e.timeStamp), -1);
+      return true;
+    }
     if (e.code === 'Space') { this.activateOD(); return true; }
     if (e.code === 'Escape') { this.togglePause(); return true; }
     if (this.state === 'pause') {
@@ -266,11 +308,20 @@ export class Game {
     return false;
   }
 
-  press(lane, perf) {
+  press(lane, perf, pid) {
     if (this.state !== 'play' && this.state !== 'lead') return;
     if (this.auto) return;
     this.setPad(lane, true);
-    this.tryHit(lane, this.now(perf));
+    const t = this.now(perf);
+    // BOMB: 판정 시각 근처에서 그 레인을 누르면 터진다
+    for (let i = this.bpos; i < this.bombs.length; i++) {
+      const b = this.bombs[i];
+      if (b.t - t > 0.06) break;
+      if (b.s === 0 && b.lane === lane && Math.abs(t - b.t) <= 0.06) this.hitBomb(b);
+    }
+    if (this.trySlideEndKey(lane, t)) return;     // 키보드로 치는 슬라이드의 끝 노드
+    const n = this.tryHit(lane, t);
+    if (n && n.kind === 'slide' && pid != null) { n.ptrId = pid; const st = this.ptr.get(pid); if (st) st.slide = n; }
   }
   release(lane, perf) {
     this.setPad(lane, false);
@@ -287,22 +338,120 @@ export class Game {
   tryHit(lane, t) {
     const q = this.lanes[lane];
     const n = q[this.qpos[lane]];
-    if (!n || n.s !== 0) return;
+    if (!n || n.s !== 0) return null;
     const dt = t - n.t;
-    if (dt < -WIN.good) return; // 너무 이른 입력은 무시
+    if (dt < -WIN.good) return null; // 너무 이른 입력은 무시
     const adt = Math.abs(dt);
     const j = adt <= WIN.perfect ? 'perfect' : adt <= WIN.great ? 'great' : 'good';
     n.j = j;
-    if (n.len > 0) {
+    if (n.kind === 'ln') {
       n.s = 1; this.holding[lane] = n;
       if (n.el) n.el.classList.add('hold');
+    } else if (n.kind === 'slide') {
+      n.s = 2; this.qpos[lane]++;               // 시작 노드 판정, 리본은 끝 노드까지 남는다
+      if (n.el) n.el.classList.add('hit');
     } else {
       n.s = 2; this.qpos[lane]++;
       this.releaseEl(n);
     }
     this.register(j, dt * 1000, lane);
+    return n;
   }
 
+  // ---------- 특수 노트: FLICK / SLIDE / BOMB ----------
+  tryFlick(dir, t, lane) {
+    let best = null, bd = 9;
+    for (let i = this.fpos; i < this.flicks.length; i++) {
+      const f = this.flicks[i];
+      if (f.t - t > WIN.good) break;
+      if (f.s !== 0 || f.dir !== dir) continue;
+      if (lane >= 0 && Math.abs(f.lane - lane) > 1) continue;
+      const d = Math.abs(t - f.t);
+      if (d <= WIN.good && d < bd) { best = f; bd = d; }
+    }
+    if (!best) return false;
+    const dt = t - best.t, adt = Math.abs(dt);
+    const j = adt <= WIN.perfect ? 'perfect' : adt <= WIN.great ? 'great' : 'good';
+    best.s = 2; best.j = j;
+    this.releaseEl(best);
+    this.register(j, dt * 1000, best.lane);
+    return true;
+  }
+  hitEnd(e, dt) {
+    const adt = Math.abs(dt);
+    const j = adt <= WIN.perfect ? 'perfect' : adt <= WIN.great ? 'great' : 'good';
+    e.s = 2;
+    this.releaseEl(e.parent);
+    this.register(j, dt * 1000, e.lane);
+  }
+  trySlideEndKey(lane, t) {
+    for (let i = this.epos; i < this.ends.length; i++) {
+      const e = this.ends[i];
+      if (e.t - t > WIN.good) break;
+      if (e.s === 0 && e.lane === lane && e.parent.s === 2 && !e.parent.broken && e.parent.ptrId == null && Math.abs(t - e.t) <= WIN.good) { this.hitEnd(e, t - e.t); return true; }
+    }
+    return false;
+  }
+  hitBomb(b) {
+    if (b.s !== 0) return;
+    b.s = 1; this.bombHits++;
+    this.combo = 0;
+    this.score = Math.max(0, this.score - BOMB_PEN);
+    this.sync = clamp(this.sync - 8, 0, 100);
+    this.releaseEl(b);
+    this.flash(b.lane, 1);
+    const el = this.E.judgeText;
+    el.textContent = 'BOMB'; el.style.color = '#ff9a3a';
+    el.style.textShadow = '3px 0 rgba(255,42,109,.9),-3px 0 rgba(0,240,255,.9),0 0 22px rgba(255,122,26,.9)';
+    el.style.opacity = 1; this.popJudge();
+    this.E.judgeSub.textContent = `−${BOMB_PEN} · COMBO BREAK`; this.E.judgeSub.style.opacity = 1;
+    this.judgeAt = performance.now();
+    if (this.sync <= 0 && !this.failed && !this.auto) this.finish(true);
+  }
+  updateSpecial(t) {
+    const g = WIN.good;
+    // FLICK
+    if (this.auto) {
+      for (let i = this.fpos; i < this.flicks.length; i++) {
+        const f = this.flicks[i];
+        if (f.t - t > 0) break;
+        if (f.s === 0) this.tryFlick(f.dir, f.t + (Math.random() - 0.5) * 0.024, -1);
+      }
+    }
+    while (this.fpos < this.flicks.length) {
+      const f = this.flicks[this.fpos];
+      if (f.s !== 0) { this.fpos++; continue; }
+      if (t - f.t > g) { f.s = 3; if (f.el) f.el.classList.add('dead'); this.register('miss', 0, f.lane); this.fpos++; continue; }
+      break;
+    }
+    // SLIDE 끝 노드: 손가락(포인터)이 끝 레인에 있으면 끝 노드 시각에 판정
+    for (let i = this.epos; i < this.ends.length; i++) {
+      const e = this.ends[i];
+      if (e.t - t > g) break;
+      const p = e.parent;
+      if (e.s !== 0 || p.s !== 2 || p.broken) continue;
+      if (this.auto) { if (t >= e.t) this.hitEnd(e, (Math.random() - 0.5) * 0.024); continue; }
+      if (p.ptrId != null) { const st = this.ptr.get(p.ptrId); if (st && st.cur === e.lane && t >= e.t - 0.01) this.hitEnd(e, t - e.t); }
+    }
+    while (this.epos < this.ends.length) {
+      const e = this.ends[this.epos];
+      if (e.s !== 0) { this.epos++; continue; }
+      if (t - e.t > g) { e.s = 3; if (e.parent.el) e.parent.el.classList.add('dead'); this.register('miss', 0, e.lane); this.epos++; continue; }
+      break;
+    }
+    // BOMB: 판정 시각 ±40ms 에 그 레인을 누르고(또는 누른 채) 있으면 터짐, 지나가면 회피 성공
+    while (this.bpos < this.bombs.length) {
+      const b = this.bombs[this.bpos];
+      if (b.s !== 0) { this.bpos++; continue; }
+      if (t - b.t > 0.06) { b.s = 4; this.bpos++; continue; }
+      break;
+    }
+    for (let i = this.bpos; i < this.bombs.length; i++) {
+      const b = this.bombs[i];
+      if (b.t - t > 0.04) break;
+      if (b.s === 0 && Math.abs(t - b.t) <= 0.04 && this.down[b.lane]) this.hitBomb(b);
+    }
+  }
   tryRelease(lane, t) {
     const n = this.holding[lane];
     if (!n) return;
@@ -492,6 +641,7 @@ export class Game {
   }
 
   update(t) {
+    this.updateSpecial(t);
     // 오토 플레이
     if (this.auto) {
       for (let l = 0; l < 4; l++) {
@@ -534,7 +684,7 @@ export class Game {
     if (!this.failed && t > Math.min(this.duration, this.lastEnd + 3) && this.noPending()) this.finish(false);
   }
   noPending() {
-    return this.qpos.every((p, l) => p >= this.lanes[l].length);
+    return this.qpos.every((p, l) => p >= this.lanes[l].length) && this.fpos >= this.flicks.length && this.epos >= this.ends.length;
   }
 
   finish(failed) {
@@ -545,7 +695,9 @@ export class Game {
     // 남은 노트는 모두 MISS 처리 (실패 시)
     if (failed) {
       for (const n of this.notes) {
+        if (n.kind === 'bomb') continue;
         if (n.s === 0 || n.s === 1) { this.counts.miss++; this.judged++; n.s = 3; }
+        if (n.kind === 'slide' && n.endNode.s === 0) { this.counts.miss++; this.judged++; n.endNode.s = 3; }
       }
     }
     const acc = this.calcAcc(false);
@@ -554,7 +706,7 @@ export class Game {
       song: this.song, diffKey: this.diffKey, stage: this.stage, chart: this.chart,
       counts: { ...this.counts }, score: Math.round(this.score), acc, maxCombo: this.maxCombo,
       total: this.total, devs: this.devs, accHist: this.accHist, missIdx: this.missIdx,
-      sync: Math.round(this.sync), failed, rank: rankOf(acc, failed), ghost: this.rec, auto: this.auto,
+      sync: Math.round(this.sync), failed, rank: rankOf(acc, failed), ghost: this.rec, auto: this.auto, bombs: this.bombHits,
     };
     this.audio.stopSong();
     this.clearNotes();
@@ -562,40 +714,57 @@ export class Game {
   }
 
   // ---------- 렌더 ----------
+  isDone(n) {
+    switch (n.kind) {
+      case 'slide': return n.s >= 2 && n.endNode.s >= 2;
+      case 'bomb': return n.s >= 1;
+      default: return n.s >= 2;
+    }
+  }
   mkEl(n) {
     const cls = LANE_CLS[n.lane];
     const left = n.lane * LANE_W + 4;
-    let el;
-    if (n.len > 0) {
-      el = this.pool.ln.pop();
-      if (!el) {
-        el = document.createElement('div');
-        el.innerHTML = '<div class="body"></div><div class="head"></div>';
-      }
+    const pool = this.pool[n.kind] || (this.pool[n.kind] = []);
+    let el = pool.pop();
+    if (!el) el = document.createElement('div');
+    el._kind = n.kind;
+    if (n.kind === 'ln') {
+      if (!el.firstChild) el.innerHTML = '<div class="body"></div><div class="head"></div>';
       el.className = 'ln ' + cls;
       const lenPx = n.len * this.pxs;
       el.firstChild.style.height = lenPx + NOTE_H / 2 + 'px';
       el.lastChild.style.top = lenPx + 'px';
       el.style.left = left + 'px';
-      el._len = lenPx;
-      el._ln = true;
+    } else if (n.kind === 'flick') {
+      el.className = 'note flick ' + (n.dir < 0 ? 'l' : 'r');
+      el.textContent = n.dir < 0 ? '‹‹‹' : '›››';
+      el.style.left = left + 'px';
+    } else if (n.kind === 'bomb') {
+      if (!el.firstChild) el.innerHTML = '<svg width="72" height="44" viewBox="0 0 72 44"><polygon points="18,2 54,2 70,14 70,30 54,42 18,42 2,30 2,14" fill="#1a0f08" stroke="#ff7a1a" stroke-width="3"/><path d="M26 14L46 30M46 14L26 30" stroke="#ff7a1a" stroke-width="5" stroke-linecap="round"/></svg>';
+      el.className = 'bomb';
+      el.style.left = n.lane * LANE_W + 16 + 'px';
+    } else if (n.kind === 'slide') {
+      const span = (n.t2 - n.t) * this.pxs;
+      const xA = n.lane * LANE_W + 4, xB = n.lane2 * LANE_W + 4, L = Math.min(xA, xB), W = Math.abs(xB - xA) + 97;
+      const hx = xA - L, ex = xB - L, H = span + 20;
+      el.className = 'slide';
+      el.style.left = L + 'px'; el.style.width = W + 'px'; el.style.height = H + 'px';
+      el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polygon points="${hx + 14},${span + 10} ${hx + 83},${span + 10} ${ex + 83},10 ${ex + 14},10" fill="rgba(77,255,154,.26)" stroke="#4dff9a" stroke-width="2"/><line x1="${hx + 48.5}" y1="${span + 10}" x2="${ex + 48.5}" y2="10" stroke="#bfffd8" stroke-width="2" stroke-dasharray="8 8" stroke-opacity=".8"/></svg><div class="sh" style="left:${hx}px;top:${span}px"></div><div class="se" style="left:${ex}px;top:0">${n.lane2 > n.lane ? '››' : '‹‹'}</div>`;
     } else {
-      el = this.pool.tap.pop();
-      if (!el) { el = document.createElement('div'); }
       el.className = 'note ' + cls;
       el.style.left = left + 'px';
-      el._ln = false;
     }
     el.style.display = '';
-    if (n.s === 1) el.classList.add('hold');
-    if (n.s >= 3) el.classList.add('dead');
+    if (n.kind === 'ln' && n.s === 1) el.classList.add('hold');
+    if (n.kind === 'slide' && n.s === 2) el.classList.add('hit');
+    if (n.s === 3 || n.s === 4 && n.kind !== 'bomb' || (n.kind === 'slide' && n.endNode.s === 3)) el.classList.add('dead');
     this.E.notes.appendChild(el);
     return el;
   }
   releaseEl(n) {
     if (!n.el) return;
     n.el.style.display = 'none';
-    (n.el._ln ? this.pool.ln : this.pool.tap).push(n.el);
+    (this.pool[n.el._kind] || (this.pool[n.el._kind] = [])).push(n.el);
     n.el = null;
   }
 
@@ -608,33 +777,30 @@ export class Game {
     const y4 = (((LINE + (t - off) * pxs) % (P * 4)) + P * 4) % (P * 4);
     this.bl.style.transform = `translate3d(0,${y4}px,0)`;
 
-    let i = this.first;
-    for (; i < this.notes.length; i++) {
-      const n = this.notes[i];
-      if (n.s >= 2 && !n.el && t - (n.end || n.t) > 0.5 && i === this.first) { this.first++; continue; }
+    const notes = this.notes;
+    for (let i = this.first; i < notes.length; i++) {
+      const n = notes[i];
+      const k = n.kind;
+      if (!n.el && i === this.first && this.isDone(n) && t - n.fin > 0.5) { this.first++; continue; }
       if (n.t - t > horizon) break;
-      if (n.s === 2) continue;
-      let yHead, lenPx = 0;
-      if (n.len > 0) {
+      if (k === 'bomb' ? n.s === 1 : k === 'slide' ? n.s === 2 && n.endNode.s === 2 : n.s === 2) continue;   // 이미 처리되어 사라진 노트
+      let y, lenPx = 0;
+      if (k === 'ln') {
         lenPx = n.len * pxs;
-        if (n.s === 1) { lenPx = Math.max(0, (n.end - t) * pxs); yHead = LINE - NOTE_H / 2; }
-        else yHead = LINE - (n.t - t) * pxs - NOTE_H / 2;
-      } else {
-        yHead = LINE - (n.t - t) * pxs - NOTE_H / 2;
-      }
-      const yTop = yHead - lenPx;
-      if (yTop > HW_H + 20 || yHead < -120) { if (n.el) this.releaseEl(n); continue; }
+        if (n.s === 1) { lenPx = Math.max(0, (n.end - t) * pxs); y = LINE - NOTE_H / 2; }
+        else y = LINE - (n.t - t) * pxs - NOTE_H / 2;
+      } else if (k === 'slide') y = LINE - (n.t2 - t) * pxs - NOTE_H / 2;     // 끝 노드가 맨 위
+      else if (k === 'bomb') y = LINE - (n.t - t) * pxs - 22;
+      else y = LINE - (n.t - t) * pxs - NOTE_H / 2;
+      const yTop = k === 'ln' ? y - lenPx : y;
+      if (yTop > HW_H + 20 || (k !== 'slide' && y < -120)) { if (n.el) this.releaseEl(n); continue; }
       if (!n.el) n.el = this.mkEl(n);
       const el = n.el;
-      if (n.len > 0) {
-        if (n.s === 1) {
-          el.firstChild.style.height = lenPx + NOTE_H / 2 + 'px';
-          el.lastChild.style.top = lenPx + 'px';
-        }
-        el.style.transform = `translate3d(0,${yTop}px,0)`;
-      } else {
-        el.style.transform = `translate3d(0,${yHead}px,0)`;
+      if (k === 'ln' && n.s === 1) {
+        el.firstChild.style.height = lenPx + NOTE_H / 2 + 'px';
+        el.lastChild.style.top = lenPx + 'px';
       }
+      el.style.transform = `translate3d(0,${yTop}px,0)`;
     }
   }
 

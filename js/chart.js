@@ -200,13 +200,89 @@ export function buildChart(ss, diff0, seedKey, stage = 0) {
     last = lane; lastStep = s;
   }
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  const fin = decorate(notes, diff0.key, stage, seedKey, step);
 
   // 노트 밀도 (19점)
   const dens = new Array(19).fill(0);
   const total = ss.dur;
-  for (const n of notes) dens[Math.min(18, Math.floor((n.t / total) * 19))]++;
-  return { diff: diff.key, stage, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur };
+  for (const n of fin) if (n.type !== 'bomb') dens[Math.min(18, Math.floor((n.t / total) * 19))]++;
+  return { diff: diff.key, stage, notes: fin, total: judgedCount(fin), density: dens, bpm: ss.bpm, offset, duration: ss.dur };
 }
+
+// ---------- 3-a) 특수 노트: 일반 노트 일부를 FLICK / SLIDE 로 바꾸고, 빈 레인에 BOMB 을 놓는다 ----------
+// 노트 표현:  flick {type:'flick', dir:-1|1}   slide {type:'slide', lane2, t2}   bomb {type:'bomb'}
+const SPECIAL = { easy: { f: 0, s: 0, b: 0 }, normal: { f: 0.05, s: 0, b: 0.02 }, hard: { f: 0.08, s: 0.04, b: 0.04 }, nightmare: { f: 0.1, s: 0.06, b: 0.06 }, overload: { f: 0.12, s: 0.08, b: 0.08 } };
+export function decorate(notes, diffKey, stage, seedKey, step) {
+  const sp = SPECIAL[diffKey];
+  if (!sp || (!sp.f && !sp.s && !sp.b)) return notes;
+  const rng = mulberry32(hashStr(seedKey + ':deco:' + diffKey));
+  const k = 1 + 0.25 * stage;
+  const margin = Math.max(0.05, step * 1.5);
+  const removed = new Set();
+  const occ = [[], [], [], []];   // [시작, 끝, 노트]
+  const isPlain = (n) => !n.type && !(n.len > 0);
+  const busy = (l, a, b, m = margin) => occ[l].some(([x, y, n]) => !removed.has(n) && a - m <= y && b + m >= x);
+  for (const n of notes) occ[n.lane].push([n.t, n.end || n.t, n]);
+  // 레인 l 의 [a,b] 구간에 겹치는 노트가 "일반 탭뿐"이면 그 목록, 하나라도 다른 종류면 null
+  const clearable = (l, a, b, except) => {
+    const hit = [];
+    for (const [x, y, n] of occ[l]) {
+      if (removed.has(n) || n === except) continue;
+      if (a - margin <= y && b + margin >= x) { if (!isPlain(n)) return null; hit.push(n); }
+    }
+    return hit;
+  };
+  const out = [];
+  for (const n of notes) {
+    if (removed.has(n)) continue;
+    if (n.len > 0 || n.type) { out.push(n); continue; }
+    const r = rng();
+    if (r < sp.f * k) {
+      const dir = n.lane === 0 ? 1 : n.lane === 3 ? -1 : rng() < 0.5 ? -1 : 1;
+      out.push({ ...n, type: 'flick', dir });
+      continue;
+    }
+    if (r < (sp.f + sp.s) * k) {
+      const t2 = n.t + [4, 6, 8][Math.floor(rng() * 3)] * step;
+      const cands = [n.lane - 2, n.lane - 1, n.lane + 1, n.lane + 2].filter((l) => l >= 0 && l < 4).sort(() => rng() - 0.5);
+      let pick = -1, kill = [];
+      for (const l2 of cands) {
+        const lo = Math.min(n.lane, l2), hi = Math.max(n.lane, l2);
+        let ok = true, rm = [];
+        for (let l = lo; l <= hi && ok; l++) {
+          // 출발 레인은 n.t 이후만, 지나는 레인은 슬라이드 구간 전체를 비워야 함 (일반 탭은 슬라이드로 흡수)
+          const c = clearable(l, l === n.lane ? n.t + step * 0.5 : n.t, t2, n);
+          if (c === null) ok = false; else rm = rm.concat(c);
+        }
+        if (ok && rm.length <= 3) { pick = l2; kill = rm; break; }
+      }
+      if (pick >= 0) {
+        kill.forEach((x) => removed.add(x));
+        const ns = { ...n, type: 'slide', lane2: pick, t2, len: 0, end: 0 };
+        out.push(ns);
+        for (let l = Math.min(n.lane, pick); l <= Math.max(n.lane, pick); l++) occ[l].push([n.t, t2, ns]);
+        continue;
+      }
+    }
+    out.push(n);
+  }
+  // 폭탄: 기존 노트와 같은 시각, 앞뒤 0.22초 동안 아무 노트가 없는 레인에만
+  const times = [...new Set(out.filter((n) => !removed.has(n)).map((n) => n.t))];
+  for (const t of times) {
+    if (rng() >= sp.b * k * 0.6) continue;
+    const free = [0, 1, 2, 3].filter((l) => !busy(l, t, t, 0.22));
+    if (!free.length || free.length === 4) continue;
+    const lane = free[Math.floor(rng() * free.length)];
+    const b = { t, lane, len: 0, end: 0, type: 'bomb' };
+    out.push(b);
+    occ[lane].push([t, t, b]);
+  }
+  const fin = out.filter((n) => !removed.has(n));
+  fin.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return fin;
+}
+// 판정 대상 개수 (슬라이드는 시작+끝 2개, 폭탄은 제외)
+export const judgedCount = (notes) => notes.reduce((a, n) => a + (n.type === 'bomb' ? 0 : n.type === 'slide' ? 2 : 1), 0);
 
 // ---------- 3-b) 극악 채보: 박자 격자를 거의 전부 채우는 스트림 + 패턴 + 동시치기 + 롱노트 ----------
 // 노트 위치는 전부 박자 격자(16분음표) 위에 놓인다. 조용한 마디만 성기게 하고 나머지는 쉬지 않고 이어짐.
@@ -273,9 +349,10 @@ export function buildBrutal(ss, diff, seedKey, stage = 0) {
     }
   }
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  const fin = decorate(notes, diff.key, stage, seedKey, step);
   const dens = new Array(19).fill(0);
-  for (const n of notes) dens[Math.min(18, Math.floor((n.t / ss.dur) * 19))]++;
-  return { diff: diff.key, stage, notes, total: notes.length, density: dens, bpm: ss.bpm, offset, duration: ss.dur, brutal: true };
+  for (const n of fin) if (n.type !== 'bomb') dens[Math.min(18, Math.floor((n.t / ss.dur) * 19))]++;
+  return { diff: diff.key, stage, notes: fin, total: judgedCount(fin), density: dens, bpm: ss.bpm, offset, duration: ss.dur, brutal: true };
 }
 
 // 곡 플래그(extreme)에 따라 일반/극악 생성기를 고른다

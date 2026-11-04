@@ -232,3 +232,15 @@ body.touch #touchBar{display:block}
 @keyframes pulsef{0%{transform:scale(.2);opacity:.95}100%{transform:scale(5.5);opacity:0}}
 
 #toast{position:absolute;left:0;top:112px;width:1280px;text-align:center;font-family:'Share Tech Mono','Noto Sans KR',monospace;font-size:13px;letter-spacing:.2em;color:var(--cy);opacity:0;transition:opacity .4s;pointer-events:none;z-index:45;text-shadow:0 0 12px rgba(0,240,255,.5)}
+
+/* ---------- 특수 노트 ---------- */
+.note.flick{background:linear-gradient(to bottom,#fff6a8,#ffe14f 45%,#c8a000);box-shadow:0 0 14px rgba(255,225,79,.85);color:#3a2c00;font:900 14px/20px 'Orbitron',sans-serif;text-align:center;letter-spacing:.12em}
+.slide{position:absolute;left:0;top:0;will-change:transform}
+.slide svg{position:absolute;left:0;top:0;overflow:visible}
+.slide .sh,.slide .se{position:absolute;width:97px;height:20px;border-radius:2px;background:linear-gradient(to bottom,#d8ffe8,#4dff9a 45%,#18b060);box-shadow:0 0 14px rgba(77,255,154,.85);color:#06301a;font:900 15px/20px 'Orbitron',sans-serif;text-align:center}
+.slide.hit .sh{opacity:.2}
+.slide.hit svg polygon{fill:rgba(77,255,154,.5)}
+.slide.dead{opacity:.28;filter:grayscale(.6)}
+.bomb{position:absolute;left:0;top:0;width:72px;height:44px;will-change:transform}
+.bomb svg{display:block}
+.lowfx .note.flick,.lowfx .slide .sh,.lowfx .slide .se{box-shadow:none !important}
