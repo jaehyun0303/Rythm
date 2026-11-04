@@ -131,13 +131,27 @@ export function setTheme(id, instant) {
   cur = id;
   clearTimeout(timer);
   if (instant) {
-    all.forEach((e) => { e.classList.add('inst'); e.classList.toggle('on', e === el); });
+    all.forEach((e) => { e.classList.add('inst'); e.classList.toggle('on', e === el); e.classList.toggle('show', e === el); });
     void el.offsetWidth;
     all.forEach((e) => e.classList.remove('inst'));
     return;
   }
+  // 새 레이어를 먼저 표시(display) 한 뒤 페이드인, 끝나면 이전 레이어는 완전히 끈다 (보이지 않는 레이어는 애니메이션 비용 0)
   el.style.zIndex = ++z;
+  el.classList.add('show');
+  void el.offsetWidth;
   el.classList.add('on');
-  timer = setTimeout(() => all.forEach((e) => { if (e !== el) e.classList.remove('on'); }), 1950);
+  timer = setTimeout(() => all.forEach((e) => { if (e !== el) e.classList.remove('on', 'show'); }), 1950);
 }
 export function resetTheme() { cur = null; }
+
+// 움직이는 요소가 많을수록 매 프레임 스타일 계산이 늘어난다 -> 레이어당 개수 예산을 넘으면 균등하게 솎아서 정지시킴
+const ANIM_SEL = '.pf,.bk,.tw,.drift,.sway,.spin,.spin2,.sp,.ss,.gl,.rain,.pulse,.swing,.ls,.nt,.em,.up,.flick,.fly';
+export function setMotion(container, budget) {
+  container.querySelectorAll('.th').forEach((layer) => {
+    if (!layer._anim) layer._anim = [...layer.querySelectorAll(ANIM_SEL)];
+    const els = layer._anim;
+    const stride = budget === Infinity ? 1 : budget <= 0 ? Infinity : Math.max(1, Math.ceil(els.length / budget));
+    els.forEach((e, i) => { e.style.animationName = i % stride === 0 && stride !== Infinity ? '' : 'none'; });
+  });
+}

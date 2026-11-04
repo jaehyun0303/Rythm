@@ -1,7 +1,7 @@
 // 플레이 화면: 하이웨이 렌더링, 입력/판정, HUD
 import { $, clamp, fmtNum, fmtTime } from './util.js';
 import { coverSVG } from './cover.js';
-import { buildThemes, setTheme, resetTheme } from './themes.js';
+import { buildThemes, setTheme, resetTheme, setMotion } from './themes.js';
 
 export const LINE = 690;       // 판정선 y (하이웨이 로컬 좌표)
 const HW_H = 700;
@@ -18,6 +18,8 @@ const OD_DUR = 9;
 const OD_MULT = 1.5;
 const LEAD_IN = 3;
 const SPEC_N = 28;
+const MOTION_BUDGET = [0, 40, 80, Infinity]; // 장면당 움직이는 요소 수 상한 (단계 0~3)
+const PERF_IDS = ['hScore', 'hAcc', 'hRank', 'cP', 'cG', 'cO', 'cM', 'combo', 'comboLbl', 'syncBar', 'syncPct', 'odRing', 'odPct', 'odNote', 'tCur', 'progFill', 'progMark', 'secName', 'judgeText', 'judgeSub', 'gYou', 'gDelta', 'gGhost', 'gNote', 'gYouBar', 'gGhostBar', 'devTicks', 'devAvg', 'notes', 'odGlow', 'screen-play', 'themes'];
 
 const DEFAULT_PALETTE = ['sky', 'sunset', 'cyber']; // 조용함 / 중간 / 강함
 const MAX_PIECE = 45; // 한 구간이 이보다 길면 쪼개서 인접 테마와 번갈아 사용 (초)
@@ -96,6 +98,9 @@ export class Game {
       u.className = 'burst'; u.style.left = l * LANE_W + 4 + 48.5 - 80 + 'px'; bursts.appendChild(u); this.burstEls.push(u);
     }
     this.bindPointers();
+    this.E = {};
+    PERF_IDS.forEach((id) => { this.E[id] = document.getElementById(id); });
+    this.dtPool = []; this.dtIdx = 0;
     const spec = $('#spec');
     let h = '';
     for (let i = 0; i < SPEC_N; i++) h += `<rect x="${(i * 10.7).toFixed(1)}" y="94" width="7" height="6" fill="#00f0ff"/>`;
@@ -191,6 +196,11 @@ export class Game {
     $('#devBand').style.width = WIN.perfect * 2000 * 1.8 + 'px';
     this.timeline = buildTimeline(entry.sections || [{ t0: 0, t1: this.duration, level: 1, name: 'TRACK' }], song, this.duration);
     buildThemes($('#themes'), [...new Set(this.timeline.map((p) => p.theme))]);
+    const mo = st.motion || 'auto';
+    this.motionLevel = mo === 'full' ? 3 : mo === 'low' ? 1 : mo === 'off' ? 0 : (st.motionLevel ?? (document.body.classList.contains('touch') ? 0 : 2));
+    setMotion(this.E.themes, MOTION_BUDGET[this.motionLevel]);
+    this._acc = 0; this._n = 0; this._lf = 0; this.fcount = 0;
+    this.progW = this.E.progFill.parentElement.offsetWidth || 260;
     this.tlIdx = 0;
     resetTheme();
     setTheme(this.timeline[0].theme, true);
@@ -204,6 +214,7 @@ export class Game {
     const P = this.beatLen * this.pxs;
     const bl = $('#beatlines');
     bl.style.background = `linear-gradient(to bottom,rgba(0,240,255,.34) 0,rgba(0,240,255,.34) 1px,transparent 1px) 0 0/100% ${P * 4}px repeat-y, linear-gradient(to bottom,rgba(0,240,255,.14) 0,rgba(0,240,255,.14) 1px,transparent 1px) 0 0/100% ${P}px repeat-y`;
+    bl.style.height = HW_H + P * 4 + 4 + 'px'; bl.style.top = -P * 4 + 'px'; bl.style.willChange = 'transform';
     this.bl = bl; this.beatPx = P;
 
     this.padEls.forEach((p) => p.classList.remove('on'));
@@ -336,7 +347,7 @@ export class Game {
       this.addDevTick(devMs, j === 'good');
       if (this.hitsound) this.audio.tick(0.5);
       if (lane !== undefined) this.flash(lane, j === 'perfect' ? 1 : 0.75);
-      $('#combo').classList.remove('bump'); void $('#combo').offsetWidth; $('#combo').classList.add('bump');
+      this.E.combo.animate([{ transform: 'scale(1.08)' }, { transform: 'scale(1)' }], { duration: 120 });
     }
     this.accHist.push(this.calcAcc(true));
     this.showJudge(j, devMs);
@@ -350,13 +361,16 @@ export class Game {
     return ((c.perfect * ACCW.perfect + c.great * ACCW.great + c.good * ACCW.good) / (base * 100)) * 100;
   }
 
+  popJudge() {
+    this.E.judgeText.animate([{ transform: 'skewX(-10deg) scale(1.35)' }, { transform: 'skewX(-10deg) scale(1)' }], { duration: 280, easing: 'ease-out' });
+  }
   showJudge(j, devMs) {
-    const J = JUDGE[j], el = $('#judgeText'), sub = $('#judgeSub');
+    const J = JUDGE[j], el = this.E.judgeText, sub = this.E.judgeSub;
     el.textContent = J.txt;
     el.style.color = J.col;
     el.style.textShadow = `3px 0 rgba(255,42,109,.9),-3px 0 rgba(0,240,255,.9),0 0 22px ${J.glow}`;
     el.style.opacity = 1;
-    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    this.popJudge();
     if (j === 'miss') sub.textContent = '';
     else {
       const m = Math.round(devMs);
@@ -367,18 +381,19 @@ export class Game {
     this.judgeAt = performance.now();
   }
 
+  // 타이밍 편차 눈금: 요소를 24개 돌려 쓰고 WAAPI 로 페이드 (히트마다 DOM 생성/삭제하지 않음)
   addDevTick(ms, bad) {
-    const box = $('#devTicks');
-    const d = document.createElement('div');
+    let d = this.dtPool[this.dtIdx];
+    if (!d) { d = document.createElement('div'); this.E.devTicks.appendChild(d); this.dtPool[this.dtIdx] = d; }
+    this.dtIdx = (this.dtIdx + 1) % 24;
     d.className = 'devtick' + (bad ? ' bad' : '');
     d.style.left = clamp(145 + ms * 1.8, 0, 288) + 'px';
-    box.appendChild(d);
-    requestAnimationFrame(() => { d.style.opacity = 0; });
-    setTimeout(() => d.remove(), 3100);
-    // 평균 마커
-    const recent = this.devs.slice(-16);
-    const avg = recent.reduce((a, b) => a + b, 0) / recent.length;
-    $('#devAvg').style.left = clamp(144 + avg * 1.8, 0, 288) + 'px';
+    d.getAnimations().forEach((a) => a.cancel());
+    d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 3000, fill: 'forwards' });
+    const n = this.devs.length, k = Math.min(16, n);
+    let sum = 0;
+    for (let i = n - k; i < n; i++) sum += this.devs[i];
+    this.E.devAvg.style.left = clamp(144 + (sum / k) * 1.8, 0, 288) + 'px';
   }
 
   flash(lane, a) {
@@ -427,22 +442,53 @@ export class Game {
     const t = this.now();
     if (this.state === 'lead' && t >= 0) {
       this.state = 'play';
-      $('#judgeText').style.opacity = 0; $('#judgeText').textContent = '';
+      this.E.judgeText.style.opacity = 0; this.E.judgeText.textContent = '';
     }
 
     if (this.state === 'lead') {
       const c = Math.ceil(-t);
-      const el = $('#judgeText');
+      const el = this.E.judgeText;
       if (c <= 3 && c > 0) {
-        if (el.textContent !== String(c)) { el.textContent = String(c); el.style.color = '#fff'; el.style.opacity = 1; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); $('#judgeSub').style.opacity = 0; }
+        if (el.textContent !== String(c)) { el.textContent = String(c); el.style.color = '#fff'; el.style.opacity = 1; this.popJudge(); this.E.judgeSub.style.opacity = 0; }
       }
     }
+    this.perfWatch();
     if (this.state === 'play') {
       this.update(t);
       if (this.state === 'done') return;
     }
     this.render(Math.max(t, -LEAD_IN));
     this.updateHUD(false, t);
+  }
+
+  // 프레임 시간을 감시해서 느리면 배경 움직임을 줄이고, 그래도 느리면 효과를 낮춘다 (AUTO 모드)
+  perfWatch() {
+    const now = performance.now();
+    if (this._lf) { const d = now - this._lf; if (d < 250) { this._acc += d; this._n++; } }
+    this._lf = now;
+    if (this.state !== 'play' || this._n < 150) return;
+    const avg = this._acc / this._n;
+    this._acc = 0; this._n = 0;
+    const st = this.store.data.settings;
+    if ((st.motion || 'auto') !== 'auto' || avg < 24) return;
+    if (this.motionLevel > 0) {
+      this.motionLevel--;
+      st.motionLevel = this.motionLevel;
+      setMotion(this.E.themes, MOTION_BUDGET[this.motionLevel]);
+      this.toast('성능 보호: 배경 움직임을 줄였어요');
+    } else if (!st.lowfx && avg > 28) {
+      st.lowfx = true;
+      document.body.classList.add('lowfx');
+      this.toast('성능 보호: 저사양 효과로 전환했어요');
+    }
+    this.store.save();
+  }
+  toast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; document.getElementById('stage').appendChild(t); }
+    t.textContent = msg; t.style.opacity = 1;
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => { t.style.opacity = 0; }, 3000);
   }
 
   update(t) {
@@ -543,7 +589,7 @@ export class Game {
     el.style.display = '';
     if (n.s === 1) el.classList.add('hold');
     if (n.s >= 3) el.classList.add('dead');
-    $('#notes').appendChild(el);
+    this.E.notes.appendChild(el);
     return el;
   }
   releaseEl(n) {
@@ -559,9 +605,8 @@ export class Game {
     // 비트 라인
     const P = this.beatPx;
     const off = this.chart.offset;
-    const y0 = (((LINE + (t - off) * pxs) % P) + P) % P;
     const y4 = (((LINE + (t - off) * pxs) % (P * 4)) + P * 4) % (P * 4);
-    this.bl.style.backgroundPosition = `0 ${y4}px, 0 ${y0}px`;
+    this.bl.style.transform = `translate3d(0,${y4}px,0)`;
 
     let i = this.first;
     for (; i < this.notes.length; i++) {
@@ -594,51 +639,57 @@ export class Game {
   }
 
   updateHUD(force, t) {
-    const c = this.cache;
-    const set = (id, v) => { if (force || c[id] !== v) { c[id] = v; $('#' + id).textContent = v; } };
-    set('hScore', fmtNum(this.score));
+    const c = this.cache, E = this.E;
+    const set = (id, v) => { if (force || c[id] !== v) { c[id] = v; E[id].textContent = v; } };
+    const sc = Math.round(this.score);
+    if (force || c.sc !== sc) { c.sc = sc; E.hScore.textContent = fmtNum(sc); }
+    const cn = this.counts;
+    if (force || c.cp !== cn.perfect) { c.cp = cn.perfect; E.cP.textContent = fmtNum(cn.perfect); }
+    if (force || c.cg !== cn.great) { c.cg = cn.great; E.cG.textContent = fmtNum(cn.great); }
+    if (force || c.co !== cn.good) { c.co = cn.good; E.cO.textContent = fmtNum(cn.good); }
+    if (force || c.cm !== cn.miss) { c.cm = cn.miss; E.cM.textContent = fmtNum(cn.miss); }
     const acc = this.calcAcc(true);
     set('hAcc', acc.toFixed(2) + '%');
     const rank = rankOf(acc, false);
     if (force || c.rank !== rank) {
       c.rank = rank;
-      const r = $('#hRank'); r.textContent = rank; r.style.background = rankColor(rank);
+      const r = E.hRank; r.textContent = rank; r.style.background = rankColor(rank);
       r.style.fontSize = rank.length > 1 ? '24px' : '30px';
     }
-    set('cP', fmtNum(this.counts.perfect)); set('cG', fmtNum(this.counts.great));
-    set('cO', fmtNum(this.counts.good)); set('cM', fmtNum(this.counts.miss));
     // 콤보
-    const cb = $('#combo'), cl = $('#comboLbl');
     if (force || c.combo !== this.combo) {
       c.combo = this.combo;
-      cb.textContent = this.combo;
+      E.combo.textContent = this.combo;
       const show = this.combo >= 2 ? 1 : 0;
-      cb.style.opacity = show; cl.style.opacity = show;
+      E.combo.style.opacity = show; E.comboLbl.style.opacity = show;
     }
     // SYNC
     const seg = Math.ceil(this.sync / 5);
     if (force || c.seg !== seg) {
       c.seg = seg;
-      $('#syncBar').style.clipPath = `inset(${(20 - seg) * 15}px 0 0 0)`;
-      $('#syncBar').style.background = this.sync < 30
-        ? 'repeating-linear-gradient(to top,#ff2a6d 0,#ff2a6d 12px,transparent 12px,transparent 15px)'
-        : 'repeating-linear-gradient(to top,#00f0ff 0,#00f0ff 12px,transparent 12px,transparent 15px)';
-      $('#syncBar').style.filter = `drop-shadow(0 0 5px ${this.sync < 30 ? 'rgba(255,42,109,.8)' : 'rgba(0,240,255,.8)'})`;
+      const sb = E.syncBar, low = this.sync < 30;
+      sb.style.clipPath = `inset(${(20 - seg) * 15}px 0 0 0)`;
+      if (c.low !== low) {
+        c.low = low;
+        sb.style.background = low
+          ? 'repeating-linear-gradient(to top,#ff2a6d 0,#ff2a6d 12px,transparent 12px,transparent 15px)'
+          : 'repeating-linear-gradient(to top,#00f0ff 0,#00f0ff 12px,transparent 12px,transparent 15px)';
+        sb.style.filter = `drop-shadow(0 0 5px ${low ? 'rgba(255,42,109,.8)' : 'rgba(0,240,255,.8)'})`;
+      }
     }
     set('syncPct', Math.round(this.sync) + '%');
     // OVERDRIVE
-    const odp = Math.floor(this.od);
-    $('#odRing').setAttribute('stroke-dasharray', `${(this.od / 100) * 339.3} 339.3`);
-    set('odPct', odp + '%');
-    const note = this.odOn ? 'ACTIVE · ×1.5' : this.od >= 100 ? 'PRESS SPACE' : 'READY AT 100%';
-    set('odNote', note);
-    $('#odRing').style.stroke = this.odOn ? '#ff2a6d' : '#00f0ff';
-    // 시간/진행
+    const odq = Math.round(this.od * 5) / 5;
+    if (force || c.odq !== odq) { c.odq = odq; E.odRing.setAttribute('stroke-dasharray', `${(odq / 100) * 339.3} 339.3`); }
+    set('odPct', Math.floor(this.od) + '%');
+    set('odNote', this.odOn ? 'ACTIVE · ×1.5' : this.od >= 100 ? 'PRESS SPACE' : 'READY AT 100%');
+    if (force || c.odOn !== this.odOn) { c.odOn = this.odOn; E.odRing.style.stroke = this.odOn ? '#ff2a6d' : '#00f0ff'; }
+    // 시간/진행 (transform 만 사용: 레이아웃 없음)
     const tt = t === undefined ? 0 : clamp(t, 0, this.duration);
     set('tCur', fmtTime(tt));
     const p = this.duration ? tt / this.duration : 0;
-    $('#progFill').style.width = p * 100 + '%';
-    $('#progMark').style.left = p * 100 + '%';
+    const pq = Math.round(p * 1000);
+    if (force || c.pq !== pq) { c.pq = pq; E.progFill.style.transform = `scaleX(${p})`; E.progMark.style.transform = `translateX(${p * this.progW}px)`; }
     const tl = this.timeline;
     if (t !== undefined && tl) {
       let i = this.tlIdx;
@@ -649,44 +700,47 @@ export class Game {
     set('secName', tl ? tl[this.tlIdx].name : '');
     // 판정 텍스트 페이드
     if (this.judgeAt && performance.now() - this.judgeAt > 700 && this.state !== 'lead') {
-      $('#judgeText').style.opacity = 0; $('#judgeSub').style.opacity = 0; this.judgeAt = 0;
+      E.judgeText.style.opacity = 0; E.judgeSub.style.opacity = 0; this.judgeAt = 0;
     }
-    // 고스트
     this.updateGhost(p);
-    // 스펙트럼
-    this.audio.spectrum(SPEC_N, this.specVals);
-    for (let i = 0; i < SPEC_N; i++) {
-      const v = this.specVals[i];
-      const h = 4 + v * 92;
-      const e = this.specEls[i];
-      e.setAttribute('y', (100 - h).toFixed(1)); e.setAttribute('height', h.toFixed(1));
-      e.setAttribute('fill', v > 0.62 ? '#ff2a6d' : '#00f0ff');
+    // 스펙트럼은 30Hz 로만 갱신
+    if (force || (++this.fcount & 1) === 0) {
+      this.audio.spectrum(SPEC_N, this.specVals);
+      for (let i = 0; i < SPEC_N; i++) {
+        const v = this.specVals[i], q = Math.round(v * 46);
+        if (c['sp' + i] === q) continue;
+        c['sp' + i] = q;
+        const h = 4 + v * 92, e = this.specEls[i];
+        e.setAttribute('y', (100 - h).toFixed(1)); e.setAttribute('height', h.toFixed(1));
+        e.setAttribute('fill', v > 0.62 ? '#ff2a6d' : '#00f0ff');
+      }
     }
   }
 
   updateGhost(p) {
-    const c = this.cache;
+    const c = this.cache, E = this.E;
     const you = Math.round(this.score);
-    const set = (id, v) => { if (c[id] !== v) { c[id] = v; $('#' + id).textContent = v; } };
-    set('gYou', fmtNum(you));
+    const set = (id, v) => { if (c[id] !== v) { c[id] = v; E[id].textContent = v; } };
+    if (c.gy !== you) { c.gy = you; E.gYou.textContent = fmtNum(you); }
     if (!this.ghost) {
       set('gDelta', '—'); set('gGhost', '—'); set('gNote', 'NO RECORD YET');
-      $('#gDelta').style.color = 'var(--mut)';
-      $('#gYouBar').style.width = '268px';
-      $('#gGhostBar').style.width = '0px';
+      if (!c.gNoGhost) { c.gNoGhost = true; E.gDelta.style.color = 'var(--mut)'; E.gYouBar.style.transform = 'scaleX(1)'; E.gGhostBar.style.transform = 'scaleX(0)'; }
       return;
     }
+    c.gNoGhost = false;
     const f = clamp(p, 0, 1) * 100, i0 = Math.floor(f), i1 = Math.min(100, i0 + 1);
     const g = this.ghost[i0] + (this.ghost[i1] - this.ghost[i0]) * (f - i0);
     const d = Math.round(you - g);
-    const dEl = $('#gDelta');
+    const dKey = d + ':' + Math.round(g);
+    if (c.gk === dKey) return;   // 값이 안 바뀌면 아무 것도 안 함
+    c.gk = dKey;
     set('gDelta', (d >= 0 ? '+' : '−') + fmtNum(Math.abs(d)));
-    dEl.style.color = d >= 0 ? 'var(--cy)' : 'var(--pk)';
-    dEl.style.textShadow = `0 0 14px ${d >= 0 ? 'rgba(0,240,255,.5)' : 'rgba(255,42,109,.5)'}`;
+    E.gDelta.style.color = d >= 0 ? 'var(--cy)' : 'var(--pk)';
+    E.gDelta.style.textShadow = `0 0 14px ${d >= 0 ? 'rgba(0,240,255,.5)' : 'rgba(255,42,109,.5)'}`;
     set('gGhost', fmtNum(Math.round(g)));
     set('gNote', 'SAME POINT IN SONG');
     const mx = Math.max(you, g, 1);
-    $('#gYouBar').style.width = (you / mx) * 268 + 'px';
-    $('#gGhostBar').style.width = (g / mx) * 268 + 'px';
+    E.gYouBar.style.transform = `scaleX(${you / mx})`;
+    E.gGhostBar.style.transform = `scaleX(${g / mx})`;
   }
 }

@@ -100,6 +100,7 @@ const OPTS = [
   { key: 'offset', name: 'AUDIO OFFSET', min: -200, max: 200, step: 5, fmt: (v) => (v > 0 ? '+' : '') + v + ' ms' },
   { key: 'volume', name: 'MUSIC VOLUME', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
   { key: 'hitsound', name: 'HIT SOUND', bool: true },
+  { key: 'motion', name: 'SCENE MOTION', choices: ['auto', 'full', 'low', 'off'] },
   { key: 'lowfx', name: 'LOW EFFECTS', bool: true },
   { key: 'auto', name: 'AUTO PLAY', bool: true },
 ];
@@ -107,14 +108,14 @@ function renderOpts() {
   const st = store.data.settings;
   $('#optRows').innerHTML = OPTS.map((o, i) => {
     const v = st[o.key];
-    const txt = o.bool ? (v ? 'ON' : 'OFF') : '◀ ' + o.fmt(v) + ' ▶';
+    const txt = o.bool ? (v ? 'ON' : 'OFF') : o.choices ? '◀ ' + String(v || o.choices[0]).toUpperCase() + ' ▶' : '◀ ' + o.fmt(v) + ' ▶';
     return `<div class="orow${i === optIdx ? ' on' : ''}" data-i="${i}" style="top:${70 + i * 46}px"><span class="n">${o.name}</span><span class="v">${txt}</span></div>`;
-  }).join('') + `<div class="mono lbl" style="position:absolute;left:28px;top:304px;letter-spacing:.1em;line-height:16px;width:464px">OFFSET +: 판정이 빠르게 / −: 늦게 (계속 LATE 로 치면 + 로)</div>`;
+  }).join('') + `<div class="mono lbl" style="position:absolute;left:28px;top:${70 + OPTS.length * 46 + 2}px;letter-spacing:.1em;line-height:16px;width:464px">OFFSET +: 판정이 빠르게 / −: 늦게 (계속 LATE 로 치면 + 로)</div>`;
   $$('#optRows .orow').forEach((r) => {
     r.addEventListener('click', (e) => {
       optIdx = +r.dataset.i;
       const o = OPTS[optIdx];
-      if (o.bool) changeOpt(1);
+      if (o.bool || o.choices) changeOpt(e.clientX < r.getBoundingClientRect().left + r.getBoundingClientRect().width / 2 && o.choices ? -1 : 1);
       else { const rect = r.getBoundingClientRect(); changeOpt(e.clientX < rect.left + rect.width / 2 ? -1 : 1); }
     });
   });
@@ -124,7 +125,11 @@ function closeOptions() { optOpen = false; $('#optOv').style.display = 'none'; s
 function changeOpt(d) {
   const o = OPTS[optIdx], st = store.data.settings;
   if (o.bool) st[o.key] = !st[o.key];
-  else {
+  else if (o.choices) {
+    const i = o.choices.indexOf(st[o.key] || o.choices[0]);
+    st[o.key] = o.choices[(i + d + o.choices.length) % o.choices.length];
+    if (o.key === 'motion') st.motionLevel = undefined; // AUTO 는 기본 단계에서 다시 시작
+  } else {
     const v = clamp(st[o.key] + d * o.step, o.min, o.max);
     st[o.key] = Math.round(v * 1000) / 1000;
   }

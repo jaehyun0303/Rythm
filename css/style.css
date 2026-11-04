@@ -163,7 +163,8 @@ body.touch #touchBar{display:block}
 #themes,#scrim{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none}
 #themes{isolation:isolate;z-index:0}
 #scrim{background:linear-gradient(to bottom,rgba(7,6,13,.5) 0,rgba(7,6,13,0) 170px)}
-.th{position:absolute;left:0;top:0;width:1280px;height:720px;opacity:0;transition:opacity 1.9s ease}
+.th{position:absolute;left:0;top:0;width:1280px;height:720px;opacity:0;transition:opacity 1.9s ease;display:none}
+.th.show{display:block}
 .th.on{opacity:1}
 .th.inst{transition:none}
 .th-bg,.th>svg{position:absolute;left:0;top:0;width:1280px;height:720px}
@@ -229,3 +230,5 @@ body.touch #touchBar{display:block}
 /* 충격파 링 */
 .th .pulse{animation:pulsef 3s ease-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes pulsef{0%{transform:scale(.2);opacity:.95}100%{transform:scale(5.5);opacity:0}}
+
+#toast{position:absolute;left:0;top:112px;width:1280px;text-align:center;font-family:'Share Tech Mono','Noto Sans KR',monospace;font-size:13px;letter-spacing:.2em;color:var(--cy);opacity:0;transition:opacity .4s;pointer-events:none;z-index:45;text-shadow:0 0 12px rgba(0,240,255,.5)}

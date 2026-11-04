@@ -186,7 +186,7 @@
   <div class="abs mono" style="left:456px;top:34px;width:368px;display:flex;align-items:center;gap:10px;font-size:13px">
     <span id="tCur" style="width:44px">00:00</span>
     <div id="prog" style="position:relative;flex:1;height:6px;background:rgba(233,247,255,.14)">
-      <div id="progFill" class="abs" style="left:0;top:0;width:0;height:6px;background:var(--cy);box-shadow:0 0 10px var(--cy)"></div>
+      <div id="progFill" class="abs" style="left:0;top:0;width:100%;height:6px;background:var(--cy);box-shadow:0 0 10px var(--cy);transform-origin:0 50%;transform:scaleX(0)"></div>
       <div id="progTicks"></div>
       <div id="progMark" class="abs" style="left:0;top:-5px;width:2px;height:16px;background:#fff;box-shadow:0 0 8px #fff"></div>
     </div>
@@ -211,10 +211,10 @@
     <div class="abs mono lbl" style="left:16px;top:14px;letter-spacing:.24em">GHOST // PERSONAL BEST</div>
     <div id="gDelta" class="abs orb" style="left:16px;top:34px;font-weight:900;font-size:36px;line-height:42px;color:var(--cy);font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(0,240,255,.5)">—</div>
     <div class="abs mono" style="left:16px;top:94px;width:268px;display:flex;justify-content:space-between;font-size:12px"><span>YOU</span><span id="gYou">0</span></div>
-    <div id="gYouBar" class="abs" style="left:16px;top:114px;width:0;height:6px;background:var(--cy);box-shadow:0 0 8px rgba(0,240,255,.7)"></div>
+    <div id="gYouBar" class="abs" style="left:16px;top:114px;width:268px;transform-origin:0 50%;transform:scaleX(0);height:6px;background:var(--cy);box-shadow:0 0 8px rgba(0,240,255,.7)"></div>
     <div class="abs mono" style="left:16px;top:130px;width:268px;display:flex;justify-content:space-between;font-size:12px;color:var(--mut)"><span>GHOST</span><span id="gGhost">—</span></div>
     <div class="abs" style="left:16px;top:150px;width:268px;height:6px;background:rgba(233,247,255,.12)"></div>
-    <div id="gGhostBar" class="abs" style="left:16px;top:150px;width:0;height:6px;background:var(--mut)"></div>
+    <div id="gGhostBar" class="abs" style="left:16px;top:150px;width:268px;transform-origin:0 50%;transform:scaleX(0);height:6px;background:var(--mut)"></div>
     <div id="gNote" class="abs mono lbl" style="left:16px;top:164px;letter-spacing:.2em">SAME POINT IN SONG</div>
   </div>
 
@@ -330,7 +330,7 @@
 
 <!-- ================= OPTIONS ================= -->
 <div id="optOv" class="ov" style="display:none">
-  <div class="panel" style="position:relative;width:520px;height:372px;background:rgba(10,8,24,.95)">
+  <div class="panel" style="position:relative;width:520px;height:470px;background:rgba(10,8,24,.95)">
     <div class="orb" style="position:absolute;left:28px;top:22px;font-weight:700;font-size:18px;letter-spacing:.4em;color:var(--cy)">MODS / OPTIONS</div>
     <div id="optRows"></div>
     <div class="mono lbl" style="position:absolute;left:28px;bottom:22px;letter-spacing:.12em"><span class="kb">↑↓ SELECT · ←→ CHANGE · ENTER / ESC CLOSE</span><span class="tc">TAP ◀ ▶ TO CHANGE</span></div>

@@ -12,13 +12,26 @@ export const DIFFS = [
 const SPM = 16; // 마디당 16분음표 스텝
 
 // ---------- 1) 분석 ----------
-export function analyze(pcm, sr, bpmHint) {
+// 제너레이터로 작성해서 동기(테스트)·비동기(브라우저, 8ms 단위로 UI 에 양보) 두 방식으로 실행
+export function runSync(gen) { let r = gen.next(); while (!r.done) r = gen.next(); return r.value; }
+export async function runAsync(gen, sliceMs = 8) {
+  let r = gen.next(), t0 = performance.now();
+  while (!r.done) {
+    if (performance.now() - t0 > sliceMs) { await new Promise((res) => setTimeout(res, 0)); t0 = performance.now(); }
+    r = gen.next();
+  }
+  return r.value;
+}
+export const analyze = (...a) => runSync(analyzeG(...a));
+
+function* analyzeG(pcm, sr, bpmHint) {
   const hop = Math.max(64, Math.round(sr * 0.005));
   const hopSec = hop / sr;
   const n = Math.floor(pcm.length / hop);
   const env = new Float32Array(n);
   let px = 0;
   for (let i = 0; i < n; i++) {
+    if ((i & 2047) === 0) yield;
     let s = 0, d = 0;
     const o = i * hop;
     for (let j = 0; j < hop; j++) {
@@ -34,11 +47,11 @@ export function analyze(pcm, sr, bpmHint) {
   for (let i = 1; i < n; i++) flux[i] = Math.max(0, comp[i] - comp[i - 1]);
 
   const dur = pcm.length / sr;
-  const grid = fitGrid(flux, hopSec, dur, bpmHint);
+  const grid = yield* fitGridG(flux, hopSec, dur, bpmHint);
   return { env, flux, hopSec, dur, bpm: grid.bpm, offset: grid.offset };
 }
 
-function fitGrid(flux, hopSec, dur, bpm0) {
+function* fitGridG(flux, hopSec, dur, bpm0) {
   const n = flux.length;
   const at = (t) => {
     const i = Math.round(t / hopSec);
@@ -46,7 +59,9 @@ function fitGrid(flux, hopSec, dur, bpm0) {
     return Math.max(flux[i - 1], flux[i], flux[i + 1]);
   };
   let best = { score: -1, bpm: bpm0, offset: 0 };
+  let it = 0;
   for (let bpm = bpm0 - 0.6; bpm <= bpm0 + 0.6001; bpm += 0.01) {
+    if ((it++ & 3) === 0) yield;
     const B = 60 / bpm;
     for (let ph = 0; ph < B; ph += 0.004) {
       let sum = 0;
@@ -320,11 +335,15 @@ export function detectSections(an) {
   });
 }
 
-export function generateAll(pcm, sr, song) {
-  const an = analyze(pcm, sr, song.bpm);
+export function generateAll(pcm, sr, song) { return runSync(generateAllG(pcm, sr, song)); }
+export function generateAllAsync(pcm, sr, song) { return runAsync(generateAllG(pcm, sr, song)); }
+function* generateAllG(pcm, sr, song) {
+  const an = yield* analyzeG(pcm, sr, song.bpm);
+  yield;
   const ss = stepScores(an);
+  yield;
   const charts = {};
-  for (const d of DIFFS) charts[d.key] = makeChart(ss, d, song.id, 0, !!song.extreme);
+  for (const d of DIFFS) { charts[d.key] = makeChart(ss, d, song.id, 0, !!song.extreme); yield; }
   // 단계 2~3 등 상위 단계 채보는 필요할 때 만든다 (ss 보관)
   return { charts, ss, bpm: an.bpm, offset: an.offset, duration: an.dur, sections: detectSections(an) };
 }
