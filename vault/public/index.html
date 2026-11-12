@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>내 보관소</title>
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--fg:#eef0f4;--mute:#8a90a0;--acc:#6ea8ff;--bad:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+.hide{display:none!important}
+#lock{min-height:100vh;display:grid;place-items:center;padding:16px}
+#lock form{background:var(--card);padding:32px 24px;border-radius:16px;width:100%;max-width:320px;text-align:center}
+input[type=password]{width:100%;padding:14px;font-size:22px;text-align:center;letter-spacing:.4em;border-radius:10px;border:1px solid #333;background:#0f1115;color:var(--fg)}
+button{background:var(--acc);color:#001;border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer}
+button.sec{background:#2a2e38;color:var(--fg)}button.bad{background:var(--bad)}
+#err{color:var(--bad);min-height:1.4em;margin:10px 0}
+header{position:sticky;top:0;background:var(--bg);padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #222;z-index:2}
+header h1{font-size:18px;margin:0 auto 0 0}
+#drop{margin:16px;padding:22px;border:2px dashed #333;border-radius:14px;text-align:center;color:var(--mute)}
+#drop.on{border-color:var(--acc);color:var(--acc)}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:0 16px 80px}
+.it{background:var(--card);border-radius:10px;overflow:hidden;position:relative;cursor:pointer;outline:2px solid transparent}
+.it.sel{outline-color:var(--acc)}
+.th{aspect-ratio:1;display:grid;place-items:center;background:#000;font-size:36px;overflow:hidden}
+.th img,.th video{width:100%;height:100%;object-fit:cover}
+.nm{padding:6px 8px;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:#0008;border:2px solid #fff;display:grid;place-items:center;font-size:13px}
+.it.sel .ck{background:var(--acc);color:#001}
+#prog{position:fixed;bottom:0;left:0;right:0;background:var(--card);padding:10px 16px;font-size:14px}
+#bar{height:4px;background:var(--acc);width:0;margin-top:6px;border-radius:2px;transition:width .2s}
+#view{position:fixed;inset:0;background:#000e;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px}
+#view img,#view video{max-width:100%;max-height:80vh}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:40px}
+</style>
+</head>
+<body>
+<div id="lock">
+  <form id="f">
+    <div style="font-size:42px">🔒</div>
+    <h2 style="margin:8px 0 18px">보관소</h2>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="•••••" autofocus>
+    <div id="err"></div>
+    <button style="width:100%">열기</button>
+  </form>
+</div>
+
+<div id="app" class="hide">
+  <header>
+    <h1>📦 내 보관소 <small id="cnt" style="color:var(--mute);font-weight:400"></small></h1>
+    <button id="up">업로드</button>
+    <button class="sec" id="dl">다운로드</button>
+    <button class="sec" id="all">전체선택</button>
+    <button class="bad hide" id="del">삭제</button>
+    <button class="sec" id="out">잠금</button>
+    <input id="pick" type="file" multiple hidden>
+  </header>
+  <div id="drop">여기에 사진/영상을 끌어놓거나 <b>업로드</b>를 누르세요</div>
+  <div id="grid"></div>
+  <div id="prog" class="hide"><span id="ptxt"></span><div id="bar"></div></div>
+</div>
+<div id="view" class="hide"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let files = [], sel = new Set();
+const api = (u, o) => fetch(u, { credentials: 'same-origin', ...o });
+
+$('#f').onsubmit = async e => {
+  e.preventDefault();
+  const r = await api('/api/login', { method: 'POST', body: JSON.stringify({ pin: $('#pin').value }) });
+  if (r.ok) { $('#pin').value = ''; $('#err').textContent = ''; open(); }
+  else { $('#err').textContent = (await r.json()).error; $('#pin').select(); }
+};
+async function open() {
+  const r = await api('/api/files');
+  if (!r.ok) return;
+  files = await r.json();
+  $('#lock').classList.add('hide'); $('#app').classList.remove('hide');
+  render();
+}
+$('#out').onclick = async () => { await api('/api/logout'); location.reload(); };
+
+const kind = f => f.type.startsWith('image/') ? 'img' : f.type.startsWith('video/') ? 'vid' : 'etc';
+function render() {
+  $('#cnt').textContent = files.length + '개';
+  $('#grid').innerHTML = files.length ? '' : '<div class="empty">아직 보관된 파일이 없어요</div>';
+  for (const f of files) {
+    const d = document.createElement('div');
+    d.className = 'it' + (sel.has(f.id) ? ' sel' : '');
+    const k = kind(f);
+    d.innerHTML = `<div class="th">${k === 'img' ? `<img loading="lazy" src="/api/file/${f.id}">` : k === 'vid' ? '🎬' : '📄'}</div><div class="nm"></div><div class="ck">${sel.has(f.id) ? '✓' : ''}</div>`;
+    d.querySelector('.nm').textContent = f.name;
+    d.querySelector('.ck').onclick = e => { e.stopPropagation(); toggle(f.id); };
+    d.onclick = () => preview(f);
+    $('#grid').appendChild(d);
+  }
+  $('#del').classList.toggle('hide', !sel.size);
+  $('#dl').textContent = sel.size ? `다운로드 (${sel.size})` : '다운로드';
+}
+function toggle(id) { sel.has(id) ? sel.delete(id) : sel.add(id); render(); }
+$('#all').onclick = () => { sel = sel.size === files.length ? new Set() : new Set(files.map(f => f.id)); render(); };
+
+function preview(f) {
+  const v = $('#view'), k = kind(f);
+  v.innerHTML = (k === 'img' ? `<img src="/api/file/${f.id}">` : k === 'vid' ? `<video src="/api/file/${f.id}" controls autoplay></video>` : `<div style="font-size:60px">📄</div>`) +
+    `<div>${f.name.replace(/</g, '&lt;')} · ${(f.size / 1048576).toFixed(1)}MB</div><div><a href="/api/download/${f.id}"><button>다운로드</button></a> <button class="sec" id="x">닫기</button></div>`;
+  v.classList.remove('hide');
+  $('#x').onclick = () => { v.classList.add('hide'); v.innerHTML = ''; };
+}
+
+$('#dl').onclick = async () => {
+  const list = sel.size ? files.filter(f => sel.has(f.id)) : files;
+  if (!list.length) return;
+  if (!sel.size && !confirm(`전체 ${list.length}개를 다운로드할까요?`)) return;
+  for (const f of list) {
+    const a = document.createElement('a'); a.href = '/api/download/' + f.id; a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    await new Promise(r => setTimeout(r, 400)); // 브라우저가 연속 다운로드를 막지 않도록
+  }
+};
+$('#del').onclick = async () => {
+  if (!confirm(`${sel.size}개를 영구 삭제할까요?`)) return;
+  for (const id of sel) await api('/api/delete/' + id, { method: 'DELETE' });
+  sel.clear(); files = await (await api('/api/files')).json(); render();
+};
+
+$('#up').onclick = () => $('#pick').click();
+$('#pick').onchange = e => { upload([...e.target.files]); e.target.value = ''; };
+const dz = $('#drop');
+['dragover', 'dragenter'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add('on'); }));
+['dragleave', 'drop'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove('on'); }));
+dz.addEventListener('drop', e => upload([...e.dataTransfer.files]));
+
+async function upload(list) {
+  if (!list.length) return;
+  $('#prog').classList.remove('hide');
+  let failed = 0;
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    $('#ptxt').textContent = `업로드 중 ${i + 1}/${list.length}: ${f.name}`;
+    $('#bar').style.width = '0';
+    await new Promise(res => {
+      const x = new XMLHttpRequest();
+      x.open('POST', '/api/upload?name=' + encodeURIComponent(f.name));
+      x.setRequestHeader('Content-Type', f.type || 'application/octet-stream');
+      x.upload.onprogress = e => $('#bar').style.width = (e.loaded / e.total * 100) + '%';
+      x.onload = () => { if (x.status !== 200) failed++; res(); };
+      x.onerror = () => { failed++; res(); };
+      x.send(f);
+    });
+  }
+  $('#ptxt').textContent = failed ? `완료 (실패 ${failed}개)` : '업로드 완료 ✓';
+  setTimeout(() => $('#prog').classList.add('hide'), 2500);
+  files = await (await api('/api/files')).json(); render();
+}
+open(); // 이미 로그인된 세션이면 바로 열림
+</script>
+</body>
+</html>
