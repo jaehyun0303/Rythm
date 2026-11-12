@@ -62,6 +62,29 @@ function upload(req, res, url) {
   out.on('error', () => json(res, 500, { error: '저장 실패' }));
 }
 
+// 큰 영상용 조각 업로드: 호스팅/터널의 요청 크기 제한(예: 100MB)을 피함
+function chunk(req, res, url) {
+  const q = url.searchParams, uid = q.get('uid') || '';
+  if (!/^[0-9a-f]{16}$/.test(uid)) return json(res, 400, { error: 'bad uid' });
+  const part = path.join(DATA, uid + '.part');
+  const have = fs.existsSync(part) ? fs.statSync(part).size : 0;
+  if (have !== +q.get('offset')) return json(res, 409, { error: 'offset', have });
+  let size = have, bad = false;
+  const out = fs.createWriteStream(part, { flags: 'a' });
+  req.on('data', c => { size += c.length; if (size > MAX_BYTES && !bad) { bad = true; req.destroy(); out.destroy(); fs.rm(part, () => {}); } });
+  req.pipe(out);
+  out.on('finish', () => {
+    if (bad) return;
+    if (q.get('final') === '1') {
+      fs.renameSync(part, path.join(DATA, uid));
+      meta[uid] = { name: (q.get('name') || 'file').replace(/[\\/\0]/g, '_').slice(0, 200), size, type: q.get('type') || 'application/octet-stream', added: Date.now() };
+      saveMeta();
+    }
+    json(res, 200, { ok: true });
+  });
+  out.on('error', () => json(res, 500, { error: '저장 실패' }));
+}
+
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
@@ -70,6 +93,7 @@ http.createServer((req, res) => {
     if (!authed(req)) return json(res, 401, { error: 'locked' });
     if (p === '/api/files') return json(res, 200, Object.entries(meta).map(([id, m]) => ({ id, ...m })).sort((a, b) => b.added - a.added));
     if (p === '/api/upload' && req.method === 'POST') return upload(req, res, url);
+    if (p === '/api/chunk' && req.method === 'POST') return chunk(req, res, url);
     if (p === '/api/logout') { sessions.delete(cookie(req).vault); return json(res, 200, { ok: true }); }
     const m = p.match(/^\/api\/(file|download|delete)\/([0-9a-f]{16})$/);
     if (m && meta[m[2]]) {

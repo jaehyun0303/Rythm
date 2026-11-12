@@ -139,15 +139,27 @@ async function upload(list) {
     const f = list[i];
     $('#ptxt').textContent = `업로드 중 ${i + 1}/${list.length}: ${f.name}`;
     $('#bar').style.width = '0';
-    await new Promise(res => {
-      const x = new XMLHttpRequest();
-      x.open('POST', '/api/upload?name=' + encodeURIComponent(f.name));
-      x.setRequestHeader('Content-Type', f.type || 'application/octet-stream');
-      x.upload.onprogress = e => $('#bar').style.width = (e.loaded / e.total * 100) + '%';
-      x.onload = () => { if (x.status !== 200) failed++; res(); };
-      x.onerror = () => { failed++; res(); };
-      x.send(f);
-    });
+    const uid = [...crypto.getRandomValues(new Uint8Array(8))].map(b => b.toString(16).padStart(2, '0')).join('');
+    const CH = 8 * 1024 * 1024;
+    let ok = true;
+    for (let off = 0; ok && (off < f.size || off === 0); off += CH) {
+      const end = Math.min(off + CH, f.size), blob = f.slice(off, end);
+      const qs = `uid=${uid}&offset=${off}&final=${end >= f.size ? 1 : 0}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || '')}`;
+      ok = false;
+      for (let t = 0; t < 4 && !ok; t++) {
+        ok = await new Promise(res => {
+          const x = new XMLHttpRequest();
+          x.open('POST', '/api/chunk?' + qs);
+          x.upload.onprogress = e => $('#bar').style.width = ((off + e.loaded) / Math.max(f.size, 1) * 100) + '%';
+          x.onload = () => res(x.status === 200);
+          x.onerror = () => res(false);
+          x.send(blob);
+        });
+        if (!ok) await new Promise(r => setTimeout(r, 1500 * (t + 1)));
+      }
+      if (end >= f.size) break;
+    }
+    if (!ok) failed++;
   }
   $('#ptxt').textContent = failed ? `완료 (실패 ${failed}개)` : '업로드 완료 ✓';
   setTimeout(() => $('#prog').classList.add('hide'), 2500);
